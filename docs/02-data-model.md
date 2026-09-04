@@ -1,0 +1,246 @@
+# データモデル / Mô hình dữ liệu
+
+| 項目 / Hạng mục | 内容 / Nội dung |
+| --- | --- |
+| 対象DB / CSDL | Supabase（PostgreSQL） |
+| 商品マスタ / Master sản phẩm | `public.products` |
+| カート / Giỏ hàng | クライアントのみ（テーブルなし） |
+
+関連: `01-plan.md`（方針）、`03-screens.md`（画面が読むフィールド）。
+
+---
+
+## 1. 方針 / Nguyên tắc
+
+**JA:** MVP の永続データは商品テーブルのみです。カートはログイン前体験のため DB に保存しません。注文・ユーザー・カテゴリは次フェーズです。
+
+**VI:** Dữ liệu lưu trên server ở MVP chỉ có bảng sản phẩm. Giỏ hàng không lưu DB vì chưa có đăng nhập. Đơn hàng, user, danh mục dành cho giai đoạn sau.
+
+```
+┌─────────────┐         ┌──────────────────────┐
+│  products   │ 1 ─── * │ CartItem (client)    │
+│  (Supabase) │         │ productId, quantity  │
+└─────────────┘         └──────────────────────┘
+```
+
+---
+
+## 2. テーブル `products` / Bảng `products`
+
+### 2.1 カラム定義 / Định nghĩa cột
+
+| カラム / Cột | 型 / Kiểu | NULL | 制約 / Ràng buộc | 説明 JA | Mô tả VI |
+| --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | NO | `PRIMARY KEY`, default `gen_random_uuid()` | 主キー | Khóa chính |
+| `name` | `text` | NO | 空文字不可 | 商品名 | Tên sản phẩm |
+| `price` | `integer` | NO | `>= 0` | 税込価格（最小通貨単位） | Giá (đơn vị tiền nhỏ nhất) |
+| `stock` | `integer` | NO | `>= 0` | 在庫数 | Số lượng tồn |
+| `description` | `text` | NO | default `''` | 詳細文 | Mô tả |
+| `image_url` | `text` | YES | URL または NULL | 画像URL | URL ảnh |
+| `created_at` | `timestamptz` | NO | default `now()` | 作成日時 | Thời điểm tạo |
+| `updated_at` | `timestamptz` | NO | default `now()` | 更新日時 | Thời điểm cập nhật |
+
+`created_at` / `updated_at` は運用用です。画面の必須表示項目ではありません。  
+Hai cột thời gian dùng cho vận hành, không bắt buộc hiện trên UI.
+
+### 2.2 画面との対応 / Ánh xạ ra màn hình
+
+| カラム | 一覧 / Danh sách | 詳細 / Chi tiết | カート / Giỏ |
+| --- | --- | --- | --- |
+| `id` | 詳細リンク | ルートパラメータ | `productId` |
+| `name` | ○ | ○ | ○ |
+| `price` | ○ | ○ | ○（行小計） |
+| `stock` | 在庫 / 売り切れ | 数量上限 | 数量クランプ |
+| `description` | 1〜2行（任意） | 全文 | — |
+| `image_url` | サムネイル | メイン画像 | サムネイル |
+
+---
+
+## 3. Supabase DDL
+
+SQL Editor で実行する。 / Chạy trong SQL Editor của Supabase.
+
+```sql
+create extension if not exists "pgcrypto";
+
+create table if not exists public.products (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(trim(name)) > 0),
+  price integer not null check (price >= 0),
+  stock integer not null check (stock >= 0),
+  description text not null default '',
+  image_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists products_created_at_idx
+  on public.products (created_at desc);
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists products_set_updated_at on public.products;
+create trigger products_set_updated_at
+before update on public.products
+for each row
+execute function public.set_updated_at();
+```
+
+---
+
+## 4. RLS（Row Level Security）
+
+**JA:** 店頭アプリは匿名でも商品を読める必要があります。書き込みはダッシュボード / service role のみです。
+
+**VI:** App storefront cần đọc sản phẩm khi chưa đăng nhập. Ghi dữ liệu chỉ qua Dashboard hoặc service role.
+
+```sql
+alter table public.products enable row level security;
+
+drop policy if exists "products_select_public" on public.products;
+create policy "products_select_public"
+on public.products
+for select
+to anon, authenticated
+using (true);
+```
+
+| 操作 / Thao tác | `anon` | `authenticated` | `service_role` |
+| --- | --- | --- | --- |
+| SELECT | 可 / Được | 可 / Được | 可 / Được |
+| INSERT / UPDATE / DELETE | 不可 / Không | 不可 / Không | 可 / Được |
+
+クライアントは **anon key** のみ使用する。service role をフロントに置かない。  
+Client chỉ dùng anon key. Không đưa service role lên frontend.
+
+---
+
+## 5. TypeScript 型 / Kiểu TypeScript
+
+アプリ側の正とする型。 / Kiểu chuẩn phía ứng dụng.
+
+```ts
+export type Product = {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  description: string;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CartItem = {
+  productId: string;
+  quantity: number;
+};
+
+export type CartLine = CartItem & {
+  product: Product;
+  lineTotal: number;
+};
+```
+
+- `price` / `stock` / `quantity` は整数。
+- `lineTotal = product.price * quantity`。
+- `quantity` は `1` 以上、かつ `product.stock` 以下。
+
+---
+
+## 6. カート（非永続） / Giỏ hàng (không lưu DB)
+
+**保存キー / Key lưu trữ:** `mini-ec:cart`
+
+```json
+{
+  "items": [
+    { "productId": "uuid", "quantity": 2 }
+  ],
+  "updatedAt": "2026-09-02T00:00:00.000Z"
+}
+```
+
+| ルール JA | Quy tắc VI |
+| --- | --- |
+| 同一 `productId` は1行にマージ | Cùng sản phẩm thì gộp một dòng |
+| `quantity + 追加分` は `stock` で上限 | Tổng số lượng không vượt `stock` |
+| `stock === 0` は追加しない | Hết hàng thì không thêm |
+| 商品が削除された行は表示時に落とす | Sản phẩm mất khỏi DB thì bỏ dòng khi load |
+
+---
+
+## 7. シード例 / Dữ liệu mẫu
+
+```sql
+insert into public.products (name, price, stock, description, image_url)
+values
+  (
+    'ミニEC トートバッグ',
+    2980,
+    12,
+    '日常使いにちょうどよいサイズのキャンバストート。',
+    'https://placehold.co/800x800/png?text=Tote'
+  ),
+  (
+    'リネン シャツ',
+    5400,
+    5,
+    '通気性のよいリネン素材。シンプルな一枚。',
+    'https://placehold.co/800x800/png?text=Shirt'
+  ),
+  (
+    'セラミック マグカップ',
+    1800,
+    0,
+    'マット釉のマグカップ。売り切れサンプル。',
+    'https://placehold.co/800x800/png?text=Mug'
+  );
+```
+
+価格は実装時の表示ロケール（円 / VND）に合わせて差し替えてよい。  
+Giá có thể đổi cho phù hợp locale hiển thị (JPY / VND) lúc implement.
+
+---
+
+## 8. 画像 / Hình ảnh
+
+| 項目 | 内容 JA | Nội dung VI |
+| --- | --- | --- |
+| 保存先 | 外部URL または Supabase Storage | URL ngoài hoặc Storage |
+| NULL 時 | プレースホルダー | Ảnh thay thế |
+| 推奨サイズ | 800×800 以上、正方形 | Tối thiểu 800×800, hình vuông |
+| Next.js | `images.remotePatterns` に許可ドメインを追加 | Whitelist domain trong config |
+
+---
+
+## 9. 環境変数 / Biến môi trường
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+`.env.local` に置き、Git にコミットしない。  
+Để trong `.env.local`, không commit lên Git.
+
+---
+
+## 10. 次フェーズ候補 / Ứng viên giai đoạn sau
+
+必要になったら追加するテーブル（本MVPでは作らない）。  
+Chỉ tạo khi thật sự cần (không làm ở MVP).
+
+| テーブル | 用途 JA | Công dụng VI |
+| --- | --- | --- |
+| `orders` | 注文ヘッダ | Đầu đơn hàng |
+| `order_items` | 注文明細 | Dòng hàng trong đơn |
+| `profiles` | 会員プロフィール | Hồ sơ user |

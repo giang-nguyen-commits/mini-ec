@@ -1,0 +1,219 @@
+# 画面一覧 / Danh sách màn hình
+
+Mini EC の MVP は **3 画面 + 共通ヘッダー** です。  
+MVP gồm **3 màn hình + header dùng chung**.
+
+関連: `01-plan.md`（ルート方針）、`04-wireframe.md`（レイアウト）。
+
+---
+
+## 1. 画面マップ / Bản đồ màn hình
+
+```
+[Header]
+  ロゴ / Logo ──────────────► /          商品一覧
+  カート / Giỏ (badge) ─────► /cart      カート
+
+[/] 商品一覧
+      │  カードクリック / Bấm thẻ
+      ▼
+[/products/[id]] 商品詳細
+      │  「カートに入れる」 / «Thêm vào giỏ»
+      ▼
+[/cart] カート
+      │  商品名クリック / Bấm tên SP
+      ▼
+[/products/[id]] 商品詳細
+```
+
+| ID | 画面名 JA | Tên VI | Path | 種別 |
+| --- | --- | --- | --- | --- |
+| S1 | 商品一覧 | Danh sách sản phẩm | `/` | 一覧 |
+| S2 | 商品詳細 | Chi tiết sản phẩm | `/products/[id]` | 詳細 |
+| S3 | カート | Giỏ hàng | `/cart` | 編集 |
+
+---
+
+## 2. 共通ヘッダー / Header dùng chung
+
+全画面で同一。 / Giống nhau trên mọi màn.
+
+| 要素 / Thành phần | 動作 JA | Hành vi VI |
+| --- | --- | --- |
+| ロゴ「Mini EC」 | `/` へ遷移 | Về danh sách |
+| カートアイコン | `/cart` へ遷移 | Mở giỏ hàng |
+| バッジ数字 | `sum(quantity)`。0 なら非表示可 | Tổng số lượng; 0 thì có thể ẩn |
+
+レスポンシブ: 左右パディングを狭め、ロゴとカートは常に同一行。  
+Mobile: thu padding, logo và giỏ luôn cùng một hàng.
+
+---
+
+## 3. S1 — 商品一覧 / Danh sách sản phẩm
+
+### 目的 / Mục đích
+
+全商品を比較し、詳細へ進む。  
+Xem và so sánh toàn bộ sản phẩm, rồi vào chi tiết.
+
+### 表示データ / Dữ liệu hiển thị
+
+`products` を `created_at desc` で取得。  
+Lấy `products` sắp xếp `created_at desc`.
+
+### UI 要素 / Thành phần UI
+
+| 要素 | 必須 | 内容 JA | Nội dung VI |
+| --- | --- | --- | --- |
+| ページタイトル | ○ | 「商品一覧」 | «Sản phẩm» |
+| 商品カード | ○ | 画像・名前・価格 | Ảnh, tên, giá |
+| 在庫バッジ | ○ | 在庫あり / 残りわずか / 売り切れ | Còn hàng / Sắp hết / Hết hàng |
+| 空状態 | ○ | 商品が0件のメッセージ | Thông báo khi chưa có SP |
+| エラー状態 | ○ | 再読み込み導線 | Có nút tải lại |
+
+**在庫バッジ規則 / Quy tắc badge tồn kho**
+
+| 条件 / Điều kiện | ラベル JA | Nhãn VI |
+| --- | --- | --- |
+| `stock === 0` | 売り切れ | Hết hàng |
+| `1 <= stock <= 3` | 残りわずか | Sắp hết |
+| `stock >= 4` | 在庫あり（任意表示） | Còn hàng (có thể ẩn) |
+
+### 操作 / Thao tác
+
+| 操作 | 結果 JA | Kết quả VI |
+| --- | --- | --- |
+| カード全体クリック | `/products/[id]` | Mở chi tiết |
+| 売り切れカード | 遷移は可。追加は詳細で不可 | Vào chi tiết được; thêm giỏ thì không |
+
+### 状態 / Trạng thái
+
+- **Loading:** カードスケルトン 4〜8 枚。
+- **Empty:** 「商品がまだありません / Chưa có sản phẩm».
+- **Error:** 「読み込みに失敗しました / Không tải được danh sách» + 再試行。
+
+---
+
+## 4. S2 — 商品詳細 / Chi tiết sản phẩm
+
+### 目的 / Mục đích
+
+1商品を確認し、数量を選んでカートへ入れる。  
+Xem một sản phẩm, chọn số lượng, thêm vào giỏ.
+
+### 表示データ / Dữ liệu hiển thị
+
+`id` で 1 件取得。無い場合は Not Found。  
+Lấy 1 bản ghi theo `id`. Không có thì Not Found.
+
+| 要素 | 必須 | 内容 JA | Nội dung VI |
+| --- | --- | --- | --- |
+| メイン画像 | ○ | `image_url` またはプレースホルダー | URL hoặc ảnh thay thế |
+| 商品名 | ○ | `name` | Tên |
+| 価格 | ○ | `price`（通貨フォーマット） | Giá đã format |
+| 在庫テキスト | ○ | 残り n 点 / 売り切れ | Còn n / Hết hàng |
+| 説明 | ○ | `description`（空なら非表示可） | Mô tả (rỗng thì ẩn) |
+| 数量セレクト | ○ | 1 〜 `stock` | 1 đến `stock` |
+| カートに入れる | ○ | 在庫があるときだけ有効 | Chỉ bật khi còn hàng |
+| 戻る | 任意 | 一覧へ | Về danh sách |
+
+### 操作 / Thao tác
+
+| 操作 | 結果 JA | Kết quả VI |
+| --- | --- | --- |
+| 数量変更 | セレクト値を更新 | Đổi số lượng chọn |
+| カートに入れる | 既存行とマージ。成功トースト | Gộp dòng cũ. Toast thành công |
+| 売り切れ時 | ボタン disabled。「売り切れ」 | Nút khóa, hiện «Hết hàng» |
+| 不正 id | 404。「一覧へ戻る」 | 404, link về danh sách |
+
+### バリデーション / Kiểm tra
+
+1. `quantity` は整数、`1 .. stock`。
+2. 追加後の合計が `stock` を超える場合は `stock` に合わせ、理由を短く出す。
+3. 連打防止（送信中はボタン無効）。
+
+**VI:** Số lượng nguyên trong `1 .. stock`. Nếu tổng sau khi thêm vượt tồn thì kẹp xuống `stock` và báo ngắn. Khi đang gửi thì khóa nút.
+
+---
+
+## 5. S3 — カート / Giỏ hàng
+
+### 目的 / Mục đích
+
+入れる商品と数量・金額を確定前に確認する。決済ボタンは置かない。  
+Xem lại sản phẩm, số lượng, thành tiền trước khi mua. **Không** có nút thanh toán.
+
+### 表示データ / Dữ liệu hiển thị
+
+`localStorage` の `productId` を `products` と結合。  
+Ghép `productId` trong `localStorage` với bảng `products`.
+
+| 要素 | 必須 | 内容 JA | Nội dung VI |
+| --- | --- | --- | --- |
+| 行画像 | ○ | サムネイル | Thumbnail |
+| 行名 | ○ | 詳細へリンク | Link sang chi tiết |
+| 単価 | ○ | `price` | Đơn giá |
+| 数量 | ○ | 1 〜 現在の `stock` | 1 đến `stock` hiện tại |
+| 行小計 | ○ | `price * quantity` | Thành tiền dòng |
+| 削除 | ○ | その行を除去 | Xóa dòng |
+| 合計 | ○ | 全行小計の合計 | Tổng cộng |
+| 買い物を続ける | ○ | `/` へ | Về danh sách |
+
+### 操作 / Thao tác
+
+| 操作 | 結果 JA | Kết quả VI |
+| --- | --- | --- |
+| 数量＋/− または select | 即時保存 | Lưu ngay |
+| 削除 | 行削除。確認ダイアログは任意 | Xóa dòng; dialog xác nhận tùy chọn |
+| 商品名 / 画像 | `/products/[id]` | Mở chi tiết |
+| 空カート | CTA「商品を見る」→ `/` | CTA «Xem sản phẩm» → `/` |
+
+### 特殊ケース / Trường hợp đặc biệt
+
+| ケース | 扱い JA | Xử lý VI |
+| --- | --- | --- |
+| カート空 | イラストなし短文 + CTA | Câu ngắn + CTA |
+| 商品削除済み | 行を除外して保存し直す | Bỏ dòng và ghi lại giỏ |
+| `stock` が数量より減った | 数量を `stock` に下げ、注記 | Hạ số lượng, ghi chú |
+| `stock` が 0 になった | 行を残し「売り切れ」、合計から除外 | Giữ dòng «Hết hàng», không cộng tiền |
+
+---
+
+## 6. 画面間の状態 / Trạng thái xuyên màn hình
+
+| 状態 | 保持場所 | 備考 JA | Ghi chú VI |
+| --- | --- | --- | --- |
+| 商品一覧/詳細 | Supabase（毎回取得で可） | キャッシュは任意 | Cache tùy chọn |
+| カート | `localStorage` + メモリ | ヘッダーバッジと同期 | Đồng bộ badge header |
+| フラッシュ（追加成功） | 一時的な UI state | 詳細→カート遷移は必須にしない | Không bắt buộc nhảy sang giỏ |
+
+推奨: 追加成功後は画面に留まりトースト表示。カートへはユーザーがヘッダーから行く。  
+Gợi ý: ở lại trang chi tiết, hiện toast. User tự vào giỏ qua header.
+
+---
+
+## 7. アクセシビリティと文言 / A11y và copy
+
+| 箇所 | JA | VI |
+| --- | --- | --- |
+| カート追加ボタン | カートに入れる | Thêm vào giỏ |
+| 売り切れボタン | 売り切れ | Hết hàng |
+| 数量ラベル | 数量 | Số lượng |
+| 合計ラベル | 合計 | Tổng cộng |
+| 空カート | カートは空です | Giỏ hàng trống |
+| 404 | 商品が見つかりません | Không tìm thấy sản phẩm |
+
+画像には `name` を `alt` にする。装飾画像は空 `alt`。  
+Ảnh sản phẩm: `alt` = `name`. Ảnh trang trí: `alt` rỗng.
+
+---
+
+## 8. 実装チェックリスト / Checklist triển khai
+
+- [ ] `/` が全商品カードを出す
+- [ ] `/products/[id]` が存在しない id で 404
+- [ ] 売り切れは追加不可
+- [ ] 追加後、ヘッダー件数が増える
+- [ ] `/cart` で数量変更がリロード後も残る
+- [ ] 在庫減に合わせて数量が下がる
+- [ ] 空一覧・空カート・通信エラーがある
