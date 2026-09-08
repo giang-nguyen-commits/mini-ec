@@ -5,6 +5,12 @@ export type Product = {
   stock: number;
   description: string;
   image_url: string | null;
+  category: string | null;
+  is_authentic: boolean;
+  origin: string | null;
+  ingredients: string | null;
+  skin_concern_tags: string[];
+  skin_type: string | null;
   created_at: string;
   updated_at?: string;
 };

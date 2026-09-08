@@ -37,6 +37,12 @@
 | `stock` | `integer` | NO | `>= 0` | 在庫数 | Số lượng tồn |
 | `description` | `text` | NO | default `''` | 詳細文 | Mô tả |
 | `image_url` | `text` | YES | URL または NULL | 画像URL | URL ảnh |
+| `category` | `text` | YES | 例: スキンケア / メイク | カテゴリ | Danh mục |
+| `is_authentic` | `boolean` | NO | default `true` | 正規品フラグ | Hàng chính hãng |
+| `origin` | `text` | YES | | 出所・正規輸入ルート | Nguồn gốc / nhập khẩu chính ngạch |
+| `ingredients` | `text` | YES | | 成分 | Thành phần |
+| `skin_concern_tags` | `text[]` | NO | default `'{}'` | 肌悩みタグ | Tag vấn đề da |
+| `skin_type` | `text` | YES | | 肌タイプ | Loại da |
 | `created_at` | `timestamptz` | NO | default `now()` | 作成日時 | Thời điểm tạo |
 | `updated_at` | `timestamptz` | NO | default `now()` | 更新日時 | Thời điểm cập nhật |
 
@@ -53,6 +59,12 @@ Hai cột thời gian dùng cho vận hành, không bắt buộc hiện trên UI
 | `stock` | 在庫 / 売り切れ | 数量上限 | 数量クランプ |
 | `description` | 1〜2行（任意） | 全文 | — |
 | `image_url` | サムネイル | メイン画像 | サムネイル |
+| `category` | — | バッジ | — |
+| `is_authentic` | — | 正規品バッジ | — |
+| `origin` | — | 出所説明 | — |
+| `ingredients` | — | 成分セクション | — |
+| `skin_concern_tags` | — | タグ | — |
+| `skin_type` | — | バッジ | — |
 
 ---
 
@@ -70,12 +82,27 @@ create table if not exists public.products (
   stock integer not null check (stock >= 0),
   description text not null default '',
   image_url text,
+  category text,
+  is_authentic boolean not null default true,
+  origin text,
+  ingredients text,
+  skin_concern_tags text[] not null default '{}',
+  skin_type text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists products_created_at_idx
   on public.products (created_at desc);
+
+-- 既存テーブルへ正規品カラムを追加する場合:
+alter table public.products
+  add column if not exists category text,
+  add column if not exists is_authentic boolean not null default true,
+  add column if not exists origin text,
+  add column if not exists ingredients text,
+  add column if not exists skin_concern_tags text[] not null default '{}',
+  add column if not exists skin_type text;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -135,6 +162,12 @@ export type Product = {
   stock: number;
   description: string;
   image_url: string | null;
+  category: string | null;
+  is_authentic: boolean;
+  origin: string | null;
+  ingredients: string | null;
+  skin_concern_tags: string[];
+  skin_type: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -181,28 +214,58 @@ export type CartLine = CartItem & {
 ## 7. シード例 / Dữ liệu mẫu
 
 ```sql
-insert into public.products (name, price, stock, description, image_url)
+insert into public.products (
+  name,
+  price,
+  stock,
+  description,
+  image_url,
+  category,
+  is_authentic,
+  origin,
+  ingredients,
+  skin_concern_tags,
+  skin_type
+)
 values
   (
-    'ミニEC トートバッグ',
-    2980,
+    'ブライトニング セラム',
+    4800,
     12,
-    '日常使いにちょうどよいサイズのキャンバストート。',
-    'https://placehold.co/800x800/png?text=Tote'
+    '朝のスキンケアに足す、ビタミンC誘導体の美容液。くすみが気になる肌向け。',
+    'https://placehold.co/800x800/png?text=Serum',
+    'スキンケア',
+    true,
+    'メーカー正規代理店との直契約による正規輸入品です。並行輸入ではありません。',
+    'Water, Glycerin, Niacinamide, 3-O-Ethyl Ascorbic Acid, Panthenol, Hyaluronic Acid',
+    array['くすみ', 'シミ', '保湿'],
+    '普通肌〜乾燥肌'
   ),
   (
-    'リネン シャツ',
-    5400,
+    'シアー リキッドファンデーション',
+    3900,
     5,
-    '通気性のよいリネン素材。シンプルな一枚。',
-    'https://placehold.co/800x800/png?text=Shirt'
+    'カバーしすぎない、日常使いのリキッドファンデ。',
+    'https://placehold.co/800x800/png?text=Foundation',
+    'メイク',
+    true,
+    '国内正規輸入元が検品したロットのみを販売しています。',
+    'Water, Cyclopentasiloxane, Titanium Dioxide, Iron Oxides, Dimethicone, Glycerin',
+    array['トーンアップ', '毛穴'],
+    '全肌質'
   ),
   (
-    'セラミック マグカップ',
-    1800,
+    'ナイト リペアクリーム',
+    5200,
     0,
-    'マット釉のマグカップ。売り切れサンプル。',
-    'https://placehold.co/800x800/png?text=Mug'
+    '夜用の濃密クリーム。売り切れサンプル。',
+    'https://placehold.co/800x800/png?text=Cream',
+    'スキンケア',
+    true,
+    '正規輸入ルートで入荷したメーカー純正品です。',
+    'Water, Squalane, Ceramide NP, Shea Butter, Glycerin, Tocopherol',
+    array['乾燥', 'エイジング'],
+    '乾燥肌'
   );
 ```
 
