@@ -25,6 +25,12 @@ export function SiteHeader({ email }: { email: string | null }) {
           </Link>
           {email ? (
             <>
+              <Link
+                href="/orders"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-forest hover:bg-emerald-50"
+              >
+                注文履歴
+              </Link>
               <span
                 className="hidden max-w-[160px] truncate text-xs text-zinc-500 sm:inline sm:text-sm"
                 title={email}

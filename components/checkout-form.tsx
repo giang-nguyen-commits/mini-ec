@@ -1,20 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { placeOrder } from "@/app/actions/place-order";
 import { useCart } from "@/components/cart-provider";
 import { buildCartLines, cartTotal, payableLines } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import type { PlaceOrderResult, Product } from "@/lib/types";
+import type { CartItem, PlaceOrderResult, Product } from "@/lib/types";
 
 const initialState: PlaceOrderResult | null = null;
 
 export function CheckoutForm() {
-  const { items, clear } = useCart();
+  const { items } = useCart();
+  const searchParams = useSearchParams();
+  const canceled = searchParams.get("canceled") === "1";
   const [products, setProducts] = useState<Product[] | null>(null);
   const [state, action, pending] = useActionState(placeOrder, initialState);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
+  const checkoutItemsRef = useRef<CartItem[]>([]);
+  const checkoutStartedRef = useRef(false);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -24,12 +31,6 @@ export function CheckoutForm() {
       .then(({ data }) => setProducts(data ?? []));
   }, []);
 
-  useEffect(() => {
-    if (state?.ok) {
-      clear();
-    }
-  }, [clear, state]);
-
   const lines = useMemo(() => {
     if (!products) {
       return [];
@@ -37,23 +38,87 @@ export function CheckoutForm() {
     return payableLines(buildCartLines(items, products).lines);
   }, [items, products]);
 
+  useEffect(() => {
+    if (lines.length > 0) {
+      checkoutItemsRef.current = lines.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+      }));
+    }
+  }, [lines]);
+
+  async function startStripeCheckout(orderId: string) {
+    const payloadItems = checkoutItemsRef.current;
+    if (payloadItems.length === 0) {
+      setPayError("カート情報を取得できませんでした。");
+      setRedirecting(false);
+      return;
+    }
+
+    setPayError(null);
+    setRedirecting(true);
+
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          items: payloadItems,
+        }),
+      });
+      const data = (await response.json()) as { url?: string; message?: string };
+      if (!response.ok || !data.url) {
+        throw new Error(data.message ?? "決済画面を開けませんでした。");
+      }
+      window.location.assign(data.url);
+    } catch (error) {
+      setRedirecting(false);
+      setPayError(
+        error instanceof Error ? error.message : "決済画面を開けませんでした。",
+      );
+    }
+  }
+
+  useEffect(() => {
+    if (!state?.ok || checkoutStartedRef.current) {
+      return;
+    }
+
+    checkoutStartedRef.current = true;
+    void startStripeCheckout(state.orderId);
+  }, [state]);
+
   const total = cartTotal(lines);
 
   if (state?.ok) {
     return (
       <div className="rounded-xl border border-zinc-200 bg-white px-6 py-16 text-center">
         <p className="text-base font-semibold text-zinc-900">
-          ご注文が完了しました
+          {redirecting
+            ? "決済画面へ移動しています..."
+            : "注文を保存しました"}
         </p>
         <p className="mt-2 text-sm text-zinc-500">
           注文番号: {state.orderId.slice(0, 8)} · {formatPrice(state.total)}
         </p>
-        <Link
-          href="/products"
-          className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
-        >
-          商品一覧へ戻る
-        </Link>
+        {payError ? (
+          <>
+            <p className="mt-4 text-sm text-red-600" role="alert">
+              {payError}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                checkoutStartedRef.current = true;
+                void startStripeCheckout(state.orderId);
+              }}
+              className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
+            >
+              決済を再試行する
+            </button>
+          </>
+        ) : null}
       </div>
     );
   }
@@ -72,6 +137,11 @@ export function CheckoutForm() {
     return (
       <div className="rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
         <p className="font-medium text-zinc-900">ご注文できる商品がありません</p>
+        {canceled ? (
+          <p className="mt-2 text-sm text-zinc-500">
+            決済がキャンセルされました。商品をカートに入れて再度お試しください。
+          </p>
+        ) : null}
         <Link
           href="/products"
           className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
@@ -84,6 +154,15 @@ export function CheckoutForm() {
 
   return (
     <form action={action} className="space-y-6">
+      {canceled ? (
+        <p
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+          role="status"
+        >
+          決済がキャンセルされました。内容を確認して、再度お支払いへお進みください。
+        </p>
+      ) : null}
+
       <input
         type="hidden"
         name="items"
@@ -107,7 +186,9 @@ export function CheckoutForm() {
                 {line.product.name}
                 <span className="text-zinc-400"> × {line.quantity}</span>
               </span>
-          <span className="font-medium text-amber-price">{formatPrice(line.lineTotal)}</span>
+              <span className="font-medium text-amber-price">
+                {formatPrice(line.lineTotal)}
+              </span>
             </li>
           ))}
         </ul>
@@ -118,9 +199,7 @@ export function CheckoutForm() {
       </section>
 
       <section className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-zinc-900">
-          お届け先
-        </h2>
+        <h2 className="text-sm font-semibold text-zinc-900">お届け先</h2>
         <Field label="お名前" name="customerName" autoComplete="name" required />
         <Field
           label="電話番号"
@@ -155,7 +234,7 @@ export function CheckoutForm() {
         disabled={pending || lines.length === 0}
         className="h-11 w-full rounded-xl bg-forest text-sm font-medium text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
       >
-        {pending ? "送信中..." : "注文を確定する"}
+        {pending ? "送信中..." : "お支払いへ進む"}
       </button>
     </form>
   );

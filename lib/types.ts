@@ -43,3 +43,17 @@ export type PlaceOrderInput = {
 export type PlaceOrderResult =
   | { ok: true; orderId: string; total: number }
   | { ok: false; message: string };
+
+export type OrderStatus = "pending" | "paid" | "canceled";
+
+export type Order = {
+  id: string;
+  user_id: string | null;
+  customer_name: string;
+  phone: string;
+  address: string;
+  total: number;
+  items: OrderItemSnapshot[];
+  status: OrderStatus;
+  created_at: string;
+};

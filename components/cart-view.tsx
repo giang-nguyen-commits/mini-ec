@@ -236,12 +236,18 @@ function CartSummary({ total }: { total: number }) {
         <span>合計</span>
         <span className="text-amber-price">{formatPrice(total)}</span>
       </div>
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Link
           href="/products"
           className="inline-flex h-11 items-center justify-center rounded-xl border border-emerald-900/15 px-4 text-sm font-medium text-forest hover:bg-emerald-50"
         >
           買い物を続ける
+        </Link>
+        <Link
+          href="/checkout"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-forest px-4 text-sm font-medium text-white hover:bg-emerald-800"
+        >
+          ご注文へ
         </Link>
       </div>
     </div>

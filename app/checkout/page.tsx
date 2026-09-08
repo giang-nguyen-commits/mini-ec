@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { CheckoutForm } from "@/components/checkout-form";
 
 export const metadata = {
@@ -10,7 +11,17 @@ export default function CheckoutPage() {
       <h1 className="mb-6 text-2xl font-semibold tracking-tight text-forest">
         ご注文
       </h1>
-      <CheckoutForm />
+      <Suspense
+        fallback={
+          <div
+            className="h-64 animate-pulse rounded-xl border border-zinc-200 bg-white"
+            role="status"
+            aria-label="注文を読み込み中"
+          />
+        }
+      >
+        <CheckoutForm />
+      </Suspense>
     </main>
   );
 }

@@ -14,6 +14,7 @@ export function ProductCard({
   return (
     <Link
       href={`/products/${product.id}`}
+      data-testid="product-card"
       className="block h-full rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
     >
       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
