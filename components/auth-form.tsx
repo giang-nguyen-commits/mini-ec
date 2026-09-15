@@ -3,8 +3,15 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { signIn, signUp, type AuthFormState } from "@/app/actions/auth";
+import { loginHref, signupHref } from "@/lib/auth-redirect";
 
-export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+export function AuthForm({
+  mode,
+  next = "/",
+}: {
+  mode: "login" | "signup";
+  next?: string;
+}) {
   const action = mode === "login" ? signIn : signUp;
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
     action,
@@ -16,10 +23,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <div className="rounded-xl border border-zinc-200 bg-white px-6 py-12 text-center">
         <p className="font-medium text-zinc-900">確認メールを送信しました</p>
         <p className="mt-2 text-sm text-zinc-500">
-          メール内のリンクを開いてから、ログインしてください。
+          メール内のリンクを開くと登録が完了します。届かない場合は迷惑メールフォルダも確認してください。
         </p>
         <Link
-          href="/login"
+          href={loginHref(next)}
           className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
         >
           ログインへ
@@ -30,6 +37,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   return (
     <form action={formAction} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
+      <input type="hidden" name="next" value={next} />
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium text-zinc-800">
           メールアドレス
@@ -93,19 +101,22 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {mode === "login" ? (
           <>
             アカウントをお持ちでない方は{" "}
-            <Link href="/signup" className="font-medium text-zinc-900 underline">
+            <Link href={signupHref(next)} className="font-medium text-zinc-900 underline">
               新規登録
             </Link>
           </>
         ) : (
           <>
             すでにアカウントをお持ちの方は{" "}
-            <Link href="/login" className="font-medium text-zinc-900 underline">
+            <Link href={loginHref(next)} className="font-medium text-zinc-900 underline">
               ログイン
             </Link>
           </>
         )}
       </p>
+      {mode === "signup" ? (
+        <p className="text-center text-xs text-zinc-400">UIは日本語固定です</p>
+      ) : null}
     </form>
   );
 }

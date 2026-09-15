@@ -1,15 +1,22 @@
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
+import { safeNextPath } from "@/lib/auth-redirect";
 import { getAuthUser } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "新規登録 — Mini EC",
 };
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const next = safeNextPath(Array.isArray(params.next) ? params.next[0] : params.next);
   const user = await getAuthUser();
   if (user) {
-    redirect("/");
+    redirect(next);
   }
 
   return (
@@ -18,7 +25,7 @@ export default async function SignupPage() {
         新規登録
       </h1>
       <div className="mx-auto max-w-md">
-        <AuthForm mode="signup" />
+        <AuthForm mode="signup" next={next} />
       </div>
     </main>
   );

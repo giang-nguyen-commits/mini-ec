@@ -54,12 +54,13 @@ export type OrderStatus = "pending" | "paid" | "canceled";
 
 export type Order = {
   id: string;
-  user_id: string | null;
+  user_id: string;
   customer_name: string;
   phone: string;
   address: string;
   total: number;
   items: OrderItemSnapshot[];
   status: OrderStatus;
+  stripe_session_id: string | null;
   created_at: string;
 };

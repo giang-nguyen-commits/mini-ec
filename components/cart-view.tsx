@@ -32,7 +32,7 @@ export function CartView() {
         throw error;
       }
 
-      setView({ status: "ready", products: data ?? [] });
+      setView({ status: "ready", products: (data as Product[] | null) ?? [] });
     } catch {
       setView({ status: "error" });
     }

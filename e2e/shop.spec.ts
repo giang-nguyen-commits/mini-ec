@@ -156,7 +156,46 @@ test("未ログインで /orders にアクセスすると /login にリダイレ
   await expect(page.getByRole("heading", { name: "ログイン" })).toBeVisible();
 });
 
-test("カートに入れて Stripe テストカードで決済すると注文履歴が paid になる", async ({
+test("未ログインで注文詳細にアクセスすると /login にリダイレクトされる", async ({
+  page,
+}) => {
+  await page.goto("/orders/00000000-0000-0000-0000-000000000000");
+
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByRole("heading", { name: "ログイン" })).toBeVisible();
+});
+
+test("未ログインで /checkout にアクセスすると /login にリダイレクトされる", async ({
+  page,
+}) => {
+  await page.goto("/checkout");
+
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByRole("heading", { name: "ログイン" })).toBeVisible();
+});
+
+test("新規登録で確認パスワードが不一致ならエラーを出す", async ({ page }) => {
+  await page.goto("/signup");
+  await page.getByLabel("メールアドレス").fill("demo.mismatch@gmail.com");
+  await page.getByLabel("パスワード", { exact: true }).fill("Playwright123!");
+  await page.getByLabel("パスワード（確認）").fill("Different123!");
+  await page.getByRole("button", { name: "新規登録" }).click();
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "確認用パスワードが一致しません。",
+  );
+});
+
+test("未ログインで /api/checkout に POST すると 401 になる", async ({
+  request,
+}) => {
+  const response = await request.post("/api/checkout", {
+    data: { orderId: "00000000-0000-0000-0000-000000000000" },
+  });
+  expect(response.status()).toBe(401);
+});
+
+test("カートに入れて Stripe テストカードで決済すると注文と在庫が更新される", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -173,6 +212,11 @@ test("カートに入れて Stripe テストカードで決済すると注文履
   const productName =
     (await inStockCard.getByRole("heading").textContent())?.trim() ?? "";
   await inStockCard.click();
+
+  const productUrl = page.url();
+  const stockText = await page.getByText(/在庫: 残り \d+ 点/).textContent();
+  const stockBefore = Number(stockText?.match(/\d+/)?.[0] ?? "0");
+  expect(stockBefore).toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "カートに入れる" }).click();
   await expect(page.getByRole("status")).toContainText("カートに追加しました");
@@ -208,5 +252,23 @@ test("カートに入れて Stripe テストカードで決済すると注文履
   );
   if (productName) {
     await expect(orderCard.getByTestId("order-items")).toContainText(productName);
+  }
+
+  await orderCard.click();
+  await expect(page.getByRole("heading", { name: "注文詳細" })).toBeVisible();
+  await expect(page.getByTestId("order-status")).toHaveAttribute(
+    "data-status",
+    "paid",
+  );
+  await expect(page.getByText("お届け先")).toBeVisible();
+  await expect(page.getByText("E2E 太郎")).toBeVisible();
+
+  await page.goto(productUrl);
+  if (stockBefore <= 1) {
+    await expect(page.getByText("在庫: 売り切れ")).toBeVisible();
+  } else {
+    await expect(
+      page.getByText(`在庫: 残り ${stockBefore - 1} 点`),
+    ).toBeVisible();
   }
 });

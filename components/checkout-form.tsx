@@ -8,7 +8,7 @@ import { useCart } from "@/components/cart-provider";
 import { buildCartLines, cartTotal, payableLines } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import type { CartItem, PlaceOrderResult, Product } from "@/lib/types";
+import type { PlaceOrderResult, Product } from "@/lib/types";
 
 const initialState: PlaceOrderResult | null = null;
 
@@ -20,7 +20,6 @@ export function CheckoutForm() {
   const [state, action, pending] = useActionState(placeOrder, initialState);
   const [payError, setPayError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
-  const checkoutItemsRef = useRef<CartItem[]>([]);
   const checkoutStartedRef = useRef(false);
 
   useEffect(() => {
@@ -28,7 +27,7 @@ export function CheckoutForm() {
     void supabase
       .from("products")
       .select("id, name, price, stock, description, image_url, created_at")
-      .then(({ data }) => setProducts(data ?? []));
+      .then(({ data }) => setProducts((data as Product[] | null) ?? []));
   }, []);
 
   const lines = useMemo(() => {
@@ -38,23 +37,7 @@ export function CheckoutForm() {
     return payableLines(buildCartLines(items, products).lines);
   }, [items, products]);
 
-  useEffect(() => {
-    if (lines.length > 0) {
-      checkoutItemsRef.current = lines.map((line) => ({
-        productId: line.productId,
-        quantity: line.quantity,
-      }));
-    }
-  }, [lines]);
-
   async function startStripeCheckout(orderId: string) {
-    const payloadItems = checkoutItemsRef.current;
-    if (payloadItems.length === 0) {
-      setPayError("カート情報を取得できませんでした。");
-      setRedirecting(false);
-      return;
-    }
-
     setPayError(null);
     setRedirecting(true);
 
@@ -64,7 +47,6 @@ export function CheckoutForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId,
-          items: payloadItems,
         }),
       });
       const data = (await response.json()) as { url?: string; message?: string };

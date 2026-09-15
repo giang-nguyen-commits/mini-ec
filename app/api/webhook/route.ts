@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import {
+  cancelPendingOrder,
+  fulfillPaidSession,
+} from "@/lib/order-lifecycle";
 import { getStripe } from "@/lib/stripe";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
@@ -33,32 +36,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ message }, { status: 400 });
   }
 
-  if (event.type !== "checkout.session.completed") {
-    return NextResponse.json({ received: true });
-  }
-
-  const session = event.data.object as Stripe.Checkout.Session;
-  const orderId = session.metadata?.orderId ?? session.metadata?.order_id;
-
-  if (!orderId) {
-    return NextResponse.json(
-      { message: "metadata に orderId がありません。" },
-      { status: 400 },
-    );
-  }
-
   try {
-    const supabase = createAdminSupabaseClient();
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "paid" })
-      .eq("id", orderId);
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const result = await fulfillPaidSession(session);
+      if (!result.ok) {
+        const ignore =
+          result.reason === "missing_order" ||
+          result.reason === "not_paid" ||
+          result.reason === "canceled";
+        if (ignore) {
+          return NextResponse.json({ received: true, ignored: result.reason });
+        }
+        return NextResponse.json(
+          { message: "注文ステータスを更新できませんでした。" },
+          { status: 500 },
+        );
+      }
+    }
 
-    if (error) {
-      return NextResponse.json(
-        { message: "注文ステータスを更新できませんでした。" },
-        { status: 500 },
-      );
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const orderId = session.metadata?.orderId ?? session.metadata?.order_id;
+      if (orderId) {
+        await cancelPendingOrder(orderId);
+      }
     }
   } catch (error) {
     const message =

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { OrderList, OrderListSkeleton } from "@/components/order-list";
+import { loginHref } from "@/lib/auth-redirect";
 import { getOrdersByUserId } from "@/lib/orders";
 import { getAuthUser } from "@/lib/supabase/server";
 
@@ -11,7 +12,7 @@ export const metadata = {
 export default async function OrdersPage() {
   const user = await getAuthUser();
   if (!user) {
-    redirect("/login");
+    redirect(loginHref("/orders"));
   }
 
   return (

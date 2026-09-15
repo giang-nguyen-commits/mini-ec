@@ -1,7 +1,8 @@
 "use server";
 
+import { reserveStockAndCreateOrder } from "@/lib/order-lifecycle";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { CartItem, OrderItemSnapshot, PlaceOrderResult } from "@/lib/types";
+import type { CartItem, PlaceOrderResult } from "@/lib/types";
 
 function trimField(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -58,59 +59,16 @@ export async function placeOrder(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const ids = [...new Set(items.map((item) => item.productId))];
-  const { data: products, error: productError } = await supabase
-    .from("products")
-    .select("id, name, price, stock")
-    .in("id", ids);
 
-  if (productError || !products) {
-    return { ok: false, message: "在庫を確認できませんでした。時間をおいて再度お試しください。" };
+  if (!user) {
+    return { ok: false, message: "ログインしてからお進みください。" };
   }
 
-  const productMap = new Map(products.map((product) => [product.id, product]));
-  const snapshots: OrderItemSnapshot[] = [];
-
-  for (const item of items) {
-    const product = productMap.get(item.productId);
-    if (!product) {
-      return { ok: false, message: "カート内の商品が販売終了になっています。" };
-    }
-
-    if (product.stock <= 0) {
-      continue;
-    }
-
-    const quantity = Math.min(item.quantity, product.stock);
-    snapshots.push({
-      product_id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity,
-      line_total: product.price * quantity,
-    });
-  }
-
-  if (snapshots.length === 0) {
-    return { ok: false, message: "在庫のある商品がありません。" };
-  }
-
-  const total = snapshots.reduce((sum, item) => sum + item.line_total, 0);
-  const orderId = crypto.randomUUID();
-
-  const { error: insertError } = await supabase.from("orders").insert({
-    id: orderId,
-    customer_name: customerName,
+  return reserveStockAndCreateOrder({
+    userId: user.id,
+    customerName,
     phone,
     address,
-    total,
-    items: snapshots,
-    user_id: user?.id ?? null,
+    items,
   });
-
-  if (insertError) {
-    return { ok: false, message: "注文を保存できませんでした。時間をおいて再度お試しください。" };
-  }
-
-  return { ok: true, orderId, total };
 }

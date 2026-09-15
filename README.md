@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mini EC
 
-## Getting Started
+少品種の化粧品・雑貨を閲覧し、カートから Stripe（テストモード）で購入できる小さな EC アプリです。
 
-First, run the development server:
+## Demo
+
+| 項目 | 値 |
+| --- | --- |
+| URL | （Vercel デプロイ後に追記） |
+| Email | `demo.mini.ec@gmail.com` |
+| Password | `Demo1234!` |
+| Stripe | テストカード `4242 4242 4242 4242` / 有効期限は未来月 / CVC 任意 |
+
+本番のカードは使わないでください。お金は動きません。
+
+## できること
+
+- 商品一覧（名前・成分検索、カテゴリ / 肌悩み）
+- 商品詳細（在庫・正規品情報・カート追加）
+- カート（localStorage、ログイン不要）
+- 新規登録 / ログイン（Supabase Auth）
+- 配送先入力 → Stripe Checkout
+- 注文履歴（ログイン必須）
+
+未ログインで `/checkout` または `/orders` を開くと `/login?next=...` に戻します。
+
+## 技術
+
+- Next.js 16 App Router / React 19 / TypeScript / Tailwind CSS 4
+- Supabase（Postgres + Auth）
+- Stripe Checkout（Test mode）
+
+## ローカル起動
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+必要な環境変数（`.env.local`）:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Supabase Auth の Redirect URLs に次を追加する:
 
-## Learn More
+- `http://localhost:3000/auth/callback`
+- `https://<Vercelのドメイン>/auth/callback`
 
-To learn more about Next.js, take a look at the following resources:
+メール確認がオンの場合、登録後に届くリンクがここへ戻ります。デモ用なら Confirm email をオフにするか、Dashboard で確認済みユーザーを1件作る。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 仕様
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+画面とデータは `docs/` を参照。Figma の「お気に入り」は任意機能のため未実装です。

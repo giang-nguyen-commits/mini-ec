@@ -1,4 +1,7 @@
 import Stripe from "stripe";
+import { getBaseUrl } from "@/lib/base-url";
+
+export { getBaseUrl };
 
 let stripeClient: Stripe | null = null;
 
@@ -13,8 +16,4 @@ export function getStripe() {
   }
 
   return stripeClient;
-}
-
-export function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
 }

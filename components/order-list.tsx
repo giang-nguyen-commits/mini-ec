@@ -1,78 +1,52 @@
+import Link from "next/link";
 import { formatPrice } from "@/lib/format";
-import type { Order, OrderItemSnapshot, OrderStatus } from "@/lib/types";
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: "未払い",
-  paid: "支払い済み",
-  canceled: "キャンセル",
-};
-
-const STATUS_TONE: Record<OrderStatus, string> = {
-  pending: "bg-amber-50 text-amber-800",
-  paid: "bg-emerald-50 text-forest",
-  canceled: "bg-zinc-100 text-zinc-600",
-};
-
-function formatDateTime(iso: string) {
-  return new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
-}
-
-function formatItemSummary(items: OrderItemSnapshot[]) {
-  return items.map((item) => `${item.name} × ${item.quantity}`).join("、");
-}
-
-function statusLabel(status: string) {
-  return STATUS_LABEL[status as OrderStatus] ?? status;
-}
-
-function statusTone(status: string) {
-  return STATUS_TONE[status as OrderStatus] ?? "bg-zinc-100 text-zinc-600";
-}
+import {
+  formatOrderDateTime,
+  formatOrderItemSummary,
+  orderStatusLabel,
+  orderStatusTone,
+} from "@/lib/order-status";
+import type { Order } from "@/lib/types";
 
 export function OrderList({ orders }: { orders: Order[] }) {
   return (
     <ul className="space-y-4">
       {orders.map((order) => (
         <li key={order.id}>
-          <article
-            data-testid="order-card"
-            data-status={order.status}
-            className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5"
+          <Link
+            href={`/orders/${order.id}`}
+            className="block rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm transition-colors hover:border-emerald-900/20 hover:bg-emerald-50/40 sm:p-5"
           >
-            <div className="flex items-start justify-between gap-3">
-              <time
-                dateTime={order.created_at}
-                className="text-sm text-zinc-500"
+            <article data-testid="order-card" data-status={order.status}>
+              <div className="flex items-start justify-between gap-3">
+                <time
+                  dateTime={order.created_at}
+                  className="text-sm text-zinc-500"
+                >
+                  {formatOrderDateTime(order.created_at)}
+                </time>
+                <span
+                  data-testid="order-status"
+                  data-status={order.status}
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${orderStatusTone(order.status)}`}
+                >
+                  {orderStatusLabel(order.status)}
+                </span>
+              </div>
+              <p
+                data-testid="order-items"
+                className="mt-3 text-sm leading-6 text-zinc-700"
               >
-                {formatDateTime(order.created_at)}
-              </time>
-              <span
-                data-testid="order-status"
-                data-status={order.status}
-                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(order.status)}`}
+                {formatOrderItemSummary(order.items)}
+              </p>
+              <p
+                data-testid="order-total"
+                className="mt-3 text-lg font-semibold tracking-tight text-amber-price"
               >
-                {statusLabel(order.status)}
-              </span>
-            </div>
-            <p
-              data-testid="order-items"
-              className="mt-3 text-sm leading-6 text-zinc-700"
-            >
-              {formatItemSummary(order.items)}
-            </p>
-            <p
-              data-testid="order-total"
-              className="mt-3 text-lg font-semibold tracking-tight text-amber-price"
-            >
-              {formatPrice(order.total)}
-            </p>
-          </article>
+                {formatPrice(order.total)}
+              </p>
+            </article>
+          </Link>
         </li>
       ))}
     </ul>

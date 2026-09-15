@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
 
@@ -19,14 +20,17 @@ function escapeIlike(value: string) {
 export type ProductListFilters = {
   q?: string;
   category?: string;
+  concern?: string;
 };
 
 export async function getProducts(
   filters: ProductListFilters = {},
 ): Promise<Product[]> {
+  await connection();
   const supabase = await createClient();
   const q = filters.q?.trim();
   const category = filters.category?.trim();
+  const concern = filters.concern?.trim();
 
   let query = supabase
     .from("products")
@@ -34,10 +38,14 @@ export async function getProducts(
     .order("created_at", { ascending: false });
 
   if (q) {
-    query = query.ilike("name", `%${escapeIlike(q)}%`);
+    const like = `%${escapeIlike(q).replace(/,/g, " ")}%`;
+    query = query.or(`name.ilike.${like},ingredients.ilike.${like}`);
   }
   if (category) {
     query = query.eq("category", category);
+  }
+  if (concern) {
+    query = query.contains("skin_concern_tags", [concern]);
   }
 
   const { data, error } = await query;
@@ -90,7 +98,33 @@ export async function getProductCategories(): Promise<string[]> {
   return categories.sort((a, b) => a.localeCompare(b, "ja"));
 }
 
+export async function getProductSkinConcerns(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("skin_concern_tags");
+
+  if (isMissingColumnError(error)) {
+    return [];
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  const tags = [
+    ...new Set(
+      (data ?? []).flatMap((row) =>
+        Array.isArray(row.skin_concern_tags) ? row.skin_concern_tags : [],
+      ),
+    ),
+  ].filter((value) => value.trim().length > 0);
+
+  return tags.sort((a, b) => a.localeCompare(b, "ja"));
+}
+
 export const getProductById = cache(async (id: string): Promise<Product | null> => {
+  await connection();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("products")

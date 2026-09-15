@@ -1,7 +1,7 @@
 # 画面一覧 / Danh sách màn hình
 
-Mini EC の MVP は **3 画面 + 共通ヘッダー** です。  
-MVP gồm **3 màn hình + header dùng chung**.
+Mini EC の現行版は **商品・カート・認証・決済** です。  
+Phiên bản hiện tại gồm **sản phẩm, giỏ, auth, thanh toán**.
 
 関連: `01-plan.md`（ルート方針）、`04-wireframe.md`（レイアウト）。
 
@@ -11,26 +11,43 @@ MVP gồm **3 màn hình + header dùng chung**.
 
 ```
 [Header]
-  ロゴ / Logo ──────────────► /          商品一覧
+  ロゴ / Logo ──────────────► /products  商品一覧
+  ログイン ───────────────► /login     未ログイン時
   カート / Giỏ (badge) ─────► /cart      カート
 
-[/] 商品一覧
+[/products] 商品一覧
       │  カードクリック / Bấm thẻ
       ▼
 [/products/[id]] 商品詳細
       │  「カートに入れる」 / «Thêm vào giỏ»
       ▼
 [/cart] カート
-      │  商品名クリック / Bấm tên SP
+      │  「ご注文へ」
       ▼
-[/products/[id]] 商品詳細
+[/login] or [/signup]  （未ログイン時。next=/checkout）
+      ▼
+[/checkout] 配送先
+      ▼
+Stripe Checkout
+      ▼
+[/checkout/success] 完了
+      ▼
+[/orders] 注文履歴
+      ▼
+[/orders/[id]] 注文詳細
 ```
 
 | ID | 画面名 JA | Tên VI | Path | 種別 |
 | --- | --- | --- | --- | --- |
-| S1 | 商品一覧 | Danh sách sản phẩm | `/` | 一覧 |
+| S1 | 商品一覧 | Danh sách sản phẩm | `/products` | 一覧 |
 | S2 | 商品詳細 | Chi tiết sản phẩm | `/products/[id]` | 詳細 |
 | S3 | カート | Giỏ hàng | `/cart` | 編集 |
+| S4 | ログイン | Đăng nhập | `/login` | 認証 |
+| S5 | 新規登録 | Đăng ký | `/signup` | 認証 |
+| S6 | ご注文 | Checkout | `/checkout` | 決済 |
+| S7 | 完了 | Thành công | `/checkout/success` | 完了 |
+| S8 | 注文履歴 | Lịch sử đơn | `/orders` | 一覧 |
+| S9 | 注文詳細 | Chi tiết đơn | `/orders/[id]` | 詳細 |
 
 ---
 
@@ -210,10 +227,14 @@ Gợi ý: ở lại trang chi tiết, hiện toast. User tự vào giỏ qua hea
 
 ## 8. 実装チェックリスト / Checklist triển khai
 
-- [ ] `/` が全商品カードを出す
-- [ ] `/products/[id]` が存在しない id で 404
-- [ ] 売り切れは追加不可
-- [ ] 追加後、ヘッダー件数が増える
-- [ ] `/cart` で数量変更がリロード後も残る
-- [ ] 在庫減に合わせて数量が下がる
-- [ ] 空一覧・空カート・通信エラーがある
+- [x] `/products` が全商品カードを出す
+- [x] 商品名・成分検索、カテゴリ / 肌悩みフィルタ
+- [x] `/products/[id]` が存在しない id で 404
+- [x] 売り切れは追加不可
+- [x] 追加後、ヘッダー件数が増える
+- [x] `/cart` で数量変更がリロード後も残る
+- [x] `/signup` で登録し、確認メールまたは即セッション
+- [x] 未ログインの `/checkout` `/orders` は `/login?next=...`
+- [x] Stripe テストカードで決済し `/orders` に paid が出る
+- [x] 注文カードから `/orders/[id]` で配送先と明細を確認できる
+- [ ] お気に入り（Figma「あったら良い」・未実装）

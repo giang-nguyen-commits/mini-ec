@@ -17,11 +17,16 @@ function firstParam(value: string | string[] | undefined) {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[]; category?: string | string[] }>;
+  searchParams: Promise<{
+    q?: string | string[];
+    category?: string | string[];
+    concern?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   const q = firstParam(params.q).trim();
   const category = firstParam(params.category).trim();
+  const concern = firstParam(params.concern).trim();
 
   return (
     <main className="mx-auto w-full max-w-[960px] flex-1 px-4 py-6 sm:px-6 sm:py-8">
@@ -29,18 +34,26 @@ export default async function ProductsPage({
         商品一覧
       </h1>
       <Suspense fallback={<ProductFiltersSkeleton />}>
-        <ProductFilters q={q} category={category} />
+        <ProductFilters q={q} category={category} concern={concern} />
       </Suspense>
-      <Suspense key={`${q}:${category}`} fallback={<ProductGridSkeleton />}>
-        <ProductList q={q} category={category} />
+      <Suspense key={`${q}:${category}:${concern}`} fallback={<ProductGridSkeleton />}>
+        <ProductList q={q} category={category} concern={concern} />
       </Suspense>
     </main>
   );
 }
 
-async function ProductList({ q, category }: { q: string; category: string }) {
-  const products = await getProducts({ q, category });
-  const filtered = Boolean(q || category);
+async function ProductList({
+  q,
+  category,
+  concern,
+}: {
+  q: string;
+  category: string;
+  concern: string;
+}) {
+  const products = await getProducts({ q, category, concern });
+  const filtered = Boolean(q || category || concern);
 
   if (products.length === 0) {
     return (
