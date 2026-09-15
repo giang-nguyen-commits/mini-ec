@@ -6,7 +6,7 @@
 
 | 項目 | 値 |
 | --- | --- |
-| URL | （Vercel デプロイ後に追記） |
+| URL | https://mini-ec-phi.vercel.app |
 | Email | `demo.mini.ec@gmail.com` |
 | Password | `Demo1234!` |
 | Stripe | テストカード `4242 4242 4242 4242` / 有効期限は未来月 / CVC 任意 |
@@ -51,7 +51,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 Supabase Auth の Redirect URLs に次を追加する:
 
 - `http://localhost:3000/auth/callback`
-- `https://<Vercelのドメイン>/auth/callback`
+- `https://mini-ec-phi.vercel.app/auth/callback`
 
 メール確認がオンの場合、登録後に届くリンクがここへ戻ります。デモ用なら Confirm email をオフにするか、Dashboard で確認済みユーザーを1件作る。
 
