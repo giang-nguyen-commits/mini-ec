@@ -109,25 +109,27 @@ const CHIFURE_ORDER = [
 ];
 
 export function groupCosmeticsByBrand(products: Product[]) {
-  const groups = COSMETIC_BRANDS.map((brand) => {
-    const brandProducts = products.filter(
-      (product) => cosmeticBrandOf(product.name) === brand.id,
-    );
-    const ordered =
-      brand.id === "SK-II"
-        ? sortByNameOrder(brandProducts, SKII_ORDER)
-        : brand.id === "KOSE"
-          ? sortByNameOrder(brandProducts, KOSE_ORDER)
-          : brand.id === "カネボウ"
-            ? sortByNameOrder(brandProducts, KANEBO_ORDER)
-            : brand.id === "ちふれ"
-              ? sortByNameOrder(brandProducts, CHIFURE_ORDER)
-              : brandProducts;
-    return {
-      id: brand.id,
-      products: ordered,
-    };
-  }).filter((group) => group.products.length > 0);
+  const groups: { id: string; products: Product[] }[] = COSMETIC_BRANDS.map(
+    (brand) => {
+      const brandProducts = products.filter(
+        (product) => cosmeticBrandOf(product.name) === brand.id,
+      );
+      const ordered =
+        brand.id === "SK-II"
+          ? sortByNameOrder(brandProducts, SKII_ORDER)
+          : brand.id === "KOSE"
+            ? sortByNameOrder(brandProducts, KOSE_ORDER)
+            : brand.id === "カネボウ"
+              ? sortByNameOrder(brandProducts, KANEBO_ORDER)
+              : brand.id === "ちふれ"
+                ? sortByNameOrder(brandProducts, CHIFURE_ORDER)
+                : brandProducts;
+      return {
+        id: brand.id,
+        products: ordered,
+      };
+    },
+  ).filter((group) => group.products.length > 0);
 
   const unmatched = products.filter(
     (product) => cosmeticBrandOf(product.name) === null,
