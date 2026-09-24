@@ -1,31 +1,141 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f7faf8;
-  --foreground: #14261c;
-  --forest: #0f5132;
-  --amber-price: #d97706;
+  --background: #ffffff;
+  --foreground: #2a1c20;
+  --surface: #ffffff;
+  --surface-muted: #f7ecef;
+  --foreground-muted: #7a5d66;
+  --forest: #a33b58;
+  --forest-strong: #7c2942;
+  --forest-soft: #f8e6ec;
+  --amber-price: #b45309;
+  --border: #efd6de;
+  --danger: #b91c1c;
+  --danger-bg: #fef2f2;
+  --warning: #92400e;
+  --warning-bg: #fff7ed;
+  --rose-ink: #9f1239;
+  --rose-bg: #fff1f2;
+  --gold: #c4a07a;
+  --shadow-rest: 0 1px 2px rgba(42, 28, 32, 0.06);
+  --shadow-hover: 0 10px 28px rgba(163, 59, 88, 0.12);
+  --card: #ffffff;
+  --card-foreground: #2a1c20;
+  --popover: #ffffff;
+  --popover-foreground: #2a1c20;
+  --primary: #a33b58;
+  --primary-foreground: #fbf6f7;
+  --secondary: #f8e6ec;
+  --secondary-foreground: #7c2942;
+  --muted: #f7ecef;
+  --muted-foreground: #7a5d66;
+  --accent: #f8e6ec;
+  --accent-foreground: #7c2942;
+  --destructive: #b91c1c;
+  --input: #efd6de;
+  --ring: #a33b58;
+  --chart-1: #a33b58;
+  --chart-2: #b45309;
+  --chart-3: #7a5d66;
+  --chart-4: #9f1239;
+  --chart-5: #7c2942;
+  --radius: 0.75rem;
+  --sidebar: #fbf6f7;
+  --sidebar-foreground: #2a1c20;
+  --sidebar-primary: #a33b58;
+  --sidebar-primary-foreground: #fbf6f7;
+  --sidebar-accent: #f8e6ec;
+  --sidebar-accent-foreground: #7c2942;
+  --sidebar-border: #efd6de;
+  --sidebar-ring: #a33b58;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground-muted: var(--foreground-muted);
   --color-forest: var(--forest);
+  --color-forest-strong: var(--forest-strong);
+  --color-forest-soft: var(--forest-soft);
   --color-amber-price: var(--amber-price);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-rose-ink: var(--rose-ink);
+  --color-rose-bg: var(--rose-bg);
+  --color-gold: var(--gold);
+  --font-sans: "Geist", "Geist Fallback", "Hiragino Sans", "Noto Sans JP",
+    ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --font-heading: var(--font-display), "Cormorant Garamond",
+    "Hiragino Mincho ProN", serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Sản phẩm là mỹ phẩm — ảnh cần nền sáng ổn định để lên đúng màu thật,
+   nên trang này cố ý chỉ hỗ trợ light mode, không theo prefers-color-scheme. */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), "Hiragino Sans", "Noto Sans JP",
-    "Noto Sans", Arial, Helvetica, sans-serif;
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [type="button"]:disabled,
+  [type="submit"]:disabled {
+    cursor: not-allowed;
+  }
 }

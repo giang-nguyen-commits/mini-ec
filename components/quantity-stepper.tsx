@@ -10,13 +10,13 @@ export function QuantityStepper({
   onChange: (quantity: number) => void;
 }) {
   return (
-    <div className="inline-flex items-center rounded-lg border border-zinc-300">
+    <div className="inline-flex items-center rounded-lg border border-border">
       <button
         type="button"
         aria-label="数量を減らす"
         disabled={value <= 1}
         onClick={() => onChange(value - 1)}
-        className="h-9 w-9 text-lg leading-none disabled:text-zinc-300"
+        className="h-9 w-9 cursor-pointer text-lg leading-none disabled:cursor-not-allowed disabled:text-foreground-muted/40"
       >
         −
       </button>
@@ -26,7 +26,7 @@ export function QuantityStepper({
         aria-label="数量を増やす"
         disabled={value >= max}
         onClick={() => onChange(value + 1)}
-        className="h-9 w-9 text-lg leading-none disabled:text-zinc-300"
+        className="h-9 w-9 cursor-pointer text-lg leading-none disabled:cursor-not-allowed disabled:text-foreground-muted/40"
       >
         +
       </button>

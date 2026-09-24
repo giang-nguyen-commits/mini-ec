@@ -12,10 +12,10 @@ export function StockBadge({ stock }: { stock: number }) {
   const label = getStockLabel(stock);
   const tone =
     stock === 0
-      ? "bg-red-50 text-red-700"
+      ? "bg-danger-bg text-danger"
       : stock <= 3
-        ? "bg-amber-50 text-amber-800"
-        : "bg-emerald-50 text-forest";
+        ? "bg-warning-bg text-warning"
+        : "bg-forest-soft text-forest";
 
   return (
     <span

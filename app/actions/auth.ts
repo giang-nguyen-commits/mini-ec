@@ -8,7 +8,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type AuthFormState =
   | { ok: true; needsConfirm?: boolean }
-  | { ok: false; message: string }
+  | { ok: false; message: string; email?: string }
   | null;
 
 function nextPath(formData: FormData) {
@@ -39,15 +39,27 @@ export async function signUp(
   const next = nextPath(formData);
 
   if (!email || !password) {
-    return { ok: false, message: "メールアドレスとパスワードを入力してください。" };
+    return {
+      ok: false,
+      message: "メールアドレスとパスワードを入力してください。",
+      email,
+    };
   }
 
   if (password.length < 6) {
-    return { ok: false, message: "パスワードは6文字以上にしてください。" };
+    return {
+      ok: false,
+      message: "パスワードは6文字以上にしてください。",
+      email,
+    };
   }
 
   if (password !== confirm) {
-    return { ok: false, message: "確認用パスワードが一致しません。" };
+    return {
+      ok: false,
+      message: "確認用パスワードが一致しません。",
+      email,
+    };
   }
 
   const supabase = await createServerSupabaseClient();
@@ -60,7 +72,7 @@ export async function signUp(
   });
 
   if (error) {
-    return { ok: false, message: mapAuthError(error) };
+    return { ok: false, message: mapAuthError(error), email };
   }
 
   const identities = data.user?.identities ?? [];
@@ -68,6 +80,7 @@ export async function signUp(
     return {
       ok: false,
       message: "このメールアドレスはすでに登録されています。",
+      email,
     };
   }
 
@@ -86,14 +99,18 @@ export async function signIn(
   const next = nextPath(formData);
 
   if (!email || !password) {
-    return { ok: false, message: "メールアドレスとパスワードを入力してください。" };
+    return {
+      ok: false,
+      message: "メールアドレスとパスワードを入力してください。",
+      email,
+    };
   }
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { ok: false, message: mapAuthError(error) };
+    return { ok: false, message: mapAuthError(error), email };
   }
 
   redirect(next);

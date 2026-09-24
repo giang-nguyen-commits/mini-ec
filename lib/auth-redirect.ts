@@ -5,6 +5,7 @@ const ALLOWED_EXACT = new Set([
   "/checkout",
   "/checkout/success",
   "/orders",
+  "/account",
 ]);
 
 const ALLOWED_QUERY: Record<string, Set<string>> = {

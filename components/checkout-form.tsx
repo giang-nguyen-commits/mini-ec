@@ -7,6 +7,11 @@ import { placeOrder } from "@/app/actions/place-order";
 import { useCart } from "@/components/cart-provider";
 import { buildCartLines, cartTotal, payableLines } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
+import {
+  persistProfile,
+  readProfile,
+  type CustomerProfile,
+} from "@/lib/profile";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type { PlaceOrderResult, Product } from "@/lib/types";
 
@@ -17,12 +22,14 @@ export function CheckoutForm() {
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled") === "1";
   const [products, setProducts] = useState<Product[] | null>(null);
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [state, action, pending] = useActionState(placeOrder, initialState);
   const [payError, setPayError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const checkoutStartedRef = useRef(false);
 
   useEffect(() => {
+    setProfile(readProfile());
     const supabase = getSupabaseBrowserClient();
     void supabase
       .from("products")
@@ -75,13 +82,13 @@ export function CheckoutForm() {
 
   if (state?.ok) {
     return (
-      <div className="rounded-xl border border-zinc-200 bg-white px-6 py-16 text-center">
-        <p className="text-base font-semibold text-zinc-900">
+      <div className="rounded-xl border border-border bg-surface px-6 py-16 text-center">
+        <p className="text-base font-semibold text-foreground">
           {redirecting
             ? "決済画面へ移動しています..."
             : "注文を保存しました"}
         </p>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-foreground-muted">
           注文番号: {state.orderId.slice(0, 8)} · {formatPrice(state.total)}
         </p>
         {payError ? (
@@ -95,7 +102,7 @@ export function CheckoutForm() {
                 checkoutStartedRef.current = true;
                 void startStripeCheckout(state.orderId);
               }}
-              className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
+              className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-forest-strong"
             >
               決済を再試行する
             </button>
@@ -105,10 +112,10 @@ export function CheckoutForm() {
     );
   }
 
-  if (!products) {
+  if (!products || !profile) {
     return (
       <div
-        className="h-64 animate-pulse rounded-xl border border-zinc-200 bg-white"
+        className="h-64 animate-pulse rounded-xl border border-border bg-surface"
         role="status"
         aria-label="注文を読み込み中"
       />
@@ -117,16 +124,16 @@ export function CheckoutForm() {
 
   if (lines.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
-        <p className="font-medium text-zinc-900">ご注文できる商品がありません</p>
+      <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-16 text-center">
+        <p className="font-medium text-foreground">ご注文できる商品がありません</p>
         {canceled ? (
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-foreground-muted">
             決済がキャンセルされました。商品をカートに入れて再度お試しください。
           </p>
         ) : null}
         <Link
           href="/products"
-          className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
+          className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-forest-strong"
         >
           商品を見る
         </Link>
@@ -135,7 +142,18 @@ export function CheckoutForm() {
   }
 
   return (
-    <form action={action} className="space-y-6">
+    <form
+      action={(formData) => {
+        persistProfile({
+          name: String(formData.get("customerName") ?? ""),
+          email: profile.email,
+          phone: String(formData.get("phone") ?? ""),
+          address: String(formData.get("address") ?? ""),
+        });
+        return action(formData);
+      }}
+      className="space-y-6"
+    >
       {canceled ? (
         <p
           className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
@@ -156,17 +174,17 @@ export function CheckoutForm() {
         )}
       />
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-zinc-900">注文内容</h2>
-        <ul className="mt-3 divide-y divide-zinc-100">
+      <section className="rounded-xl border border-border bg-surface p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-foreground">注文内容</h2>
+        <ul className="mt-3 divide-y divide-border">
           {lines.map((line) => (
             <li
               key={line.productId}
               className="flex items-start justify-between gap-3 py-2 text-sm"
             >
-              <span className="text-zinc-700">
+              <span className="text-foreground">
                 {line.product.name}
-                <span className="text-zinc-400"> × {line.quantity}</span>
+                <span className="text-foreground-muted"> × {line.quantity}</span>
               </span>
               <span className="font-medium text-amber-price">
                 {formatPrice(line.lineTotal)}
@@ -174,24 +192,31 @@ export function CheckoutForm() {
             </li>
           ))}
         </ul>
-        <div className="mt-3 flex justify-between border-t border-zinc-200 pt-3 text-base font-semibold">
+        <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-semibold">
           <span>合計</span>
           <span className="text-amber-price">{formatPrice(total)}</span>
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-zinc-900">お届け先</h2>
-        <Field label="お名前" name="customerName" autoComplete="name" required />
+      <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-foreground">お届け先</h2>
+        <Field
+          label="お名前"
+          name="customerName"
+          autoComplete="name"
+          required
+          defaultValue={profile.name}
+        />
         <Field
           label="電話番号"
           name="phone"
           type="tel"
           autoComplete="tel"
           required
+          defaultValue={profile.phone}
         />
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-zinc-800">
+          <span className="mb-1.5 block text-sm font-medium text-foreground">
             住所
           </span>
           <textarea
@@ -200,7 +225,8 @@ export function CheckoutForm() {
             minLength={5}
             rows={3}
             autoComplete="street-address"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-forest"
+            defaultValue={profile.address}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-forest"
           />
         </label>
       </section>
@@ -214,7 +240,7 @@ export function CheckoutForm() {
       <button
         type="submit"
         disabled={pending || lines.length === 0}
-        className="h-11 w-full rounded-xl bg-forest text-sm font-medium text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+        className="h-11 w-full rounded-full bg-forest text-sm font-medium text-white hover:bg-forest-strong disabled:cursor-not-allowed disabled:bg-surface-muted"
       >
         {pending ? "送信中..." : "お支払いへ進む"}
       </button>
@@ -228,16 +254,18 @@ function Field({
   type = "text",
   autoComplete,
   required,
+  defaultValue,
 }: {
   label: string;
   name: string;
   type?: string;
   autoComplete?: string;
   required?: boolean;
+  defaultValue?: string;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-zinc-800">
+      <span className="mb-1.5 block text-sm font-medium text-foreground">
         {label}
       </span>
       <input
@@ -245,7 +273,8 @@ function Field({
         type={type}
         required={required}
         autoComplete={autoComplete}
-        className="h-11 w-full rounded-lg border border-zinc-300 px-3 text-sm outline-none focus:border-forest"
+        defaultValue={defaultValue}
+        className="h-11 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-forest"
       />
     </label>
   );

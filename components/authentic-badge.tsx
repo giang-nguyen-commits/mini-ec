@@ -1,13 +1,13 @@
 export function AuthenticBadge({ authentic }: { authentic: boolean }) {
   const tone = authentic
-    ? "bg-emerald-50 text-forest"
-    : "bg-zinc-100 text-zinc-600";
+    ? "bg-forest-soft text-forest"
+    : "bg-surface-muted text-foreground-muted";
 
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${tone}`}
     >
-      {authentic ? "正規品" : "正規品未確認"}
+      {authentic ? "正規品（デモ掲載）" : "参考データ"}
     </span>
   );
 }

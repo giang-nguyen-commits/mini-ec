@@ -1,5 +1,13 @@
 import { cache } from "react";
 import { connection } from "next/server";
+import {
+  catalogGroupOf,
+  cosmeticBrandOf,
+  resolveHealthLine,
+  healthLineOf,
+  resolveCatalogGroup,
+} from "@/lib/catalog";
+import { productMatchesQuery } from "@/lib/search";
 import { createClient } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
 
@@ -13,13 +21,10 @@ function isMissingColumnError(error: { code?: string; message?: string } | null)
   return error?.code === "42703" || /column .* does not exist/i.test(error?.message ?? "");
 }
 
-function escapeIlike(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
-
 export type ProductListFilters = {
   q?: string;
   category?: string;
+  brand?: string;
   concern?: string;
 };
 
@@ -30,6 +35,7 @@ export async function getProducts(
   const supabase = await createClient();
   const q = filters.q?.trim();
   const category = filters.category?.trim();
+  const brand = filters.brand?.trim();
   const concern = filters.concern?.trim();
 
   let query = supabase
@@ -37,13 +43,6 @@ export async function getProducts(
     .select(productColumns)
     .order("created_at", { ascending: false });
 
-  if (q) {
-    const like = `%${escapeIlike(q).replace(/,/g, " ")}%`;
-    query = query.or(`name.ilike.${like},ingredients.ilike.${like}`);
-  }
-  if (category) {
-    query = query.eq("category", category);
-  }
   if (concern) {
     query = query.contains("skin_concern_tags", [concern]);
   }
@@ -51,28 +50,74 @@ export async function getProducts(
   const { data, error } = await query;
 
   if (isMissingColumnError(error)) {
-    let fallback = supabase
+    const retry = await supabase
       .from("products")
       .select(legacyProductColumns)
       .order("created_at", { ascending: false });
-
-    if (q) {
-      fallback = fallback.ilike("name", `%${escapeIlike(q)}%`);
-    }
-
-    const retry = await fallback;
     if (retry.error) {
       throw retry.error;
     }
 
-    return (retry.data ?? []).map((row) => normalizeProduct(row as Product));
+    return applyListFilters(
+      (retry.data ?? []).map((row) => normalizeProduct(row as Product)),
+      { q, category, brand },
+    );
   }
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []).map(normalizeProduct);
+  return applyListFilters((data ?? []).map(normalizeProduct), {
+    q,
+    category,
+    brand,
+  });
+}
+
+function applyListFilters(
+  products: Product[],
+  {
+    q,
+    category,
+    brand,
+  }: {
+    q?: string;
+    category?: string;
+    brand?: string;
+  },
+): Product[] {
+  let filtered = applyCatalogFilters(products, category, brand);
+  if (q) {
+    filtered = filtered.filter((product) => productMatchesQuery(product, q));
+  }
+  return filtered;
+}
+
+function applyCatalogFilters(
+  products: Product[],
+  category?: string,
+  brand?: string,
+): Product[] {
+  let filtered = products;
+
+  const group = resolveCatalogGroup(category);
+  if (group) {
+    filtered = filtered.filter((product) => catalogGroupOf(product) === group);
+  }
+
+  if (brand && group === "化粧品") {
+    filtered = filtered.filter((product) => cosmeticBrandOf(product.name) === brand);
+  }
+
+  if (group === "健康商品") {
+    const line = resolveHealthLine(brand) ?? resolveHealthLine(category);
+    if (line) {
+      filtered = filtered.filter((product) => healthLineOf(product) === line);
+    }
+  }
+
+  return filtered;
 }
 
 export async function getProductCategories(): Promise<string[]> {
@@ -171,7 +216,13 @@ function normalizeProduct(row: Product): Product {
   };
 }
 
-const cosmeticsCategories = new Set(["スキンケア", "メイク"]);
+const cosmeticsCategories = new Set([
+  "スキンケア",
+  "メイク",
+  "マスク",
+  "洗顔",
+  "日焼け止め",
+]);
 
 export function isCosmeticsProduct(product: Pick<Product, "category">) {
   return cosmeticsCategories.has(product.category ?? "");

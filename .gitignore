@@ -49,3 +49,10 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local verification dumps at repo root (keep public/ assets)
+/*.png
+/.playwright-mcp/
+
+# editor
+.cursor/

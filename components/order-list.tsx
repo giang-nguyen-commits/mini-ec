@@ -15,13 +15,13 @@ export function OrderList({ orders }: { orders: Order[] }) {
         <li key={order.id}>
           <Link
             href={`/orders/${order.id}`}
-            className="block rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm transition-colors hover:border-emerald-900/20 hover:bg-emerald-50/40 sm:p-5"
+            className="block rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-rest)] transition duration-200 hover:-translate-y-0.5 hover:border-forest/25 hover:shadow-[var(--shadow-hover)] sm:p-5"
           >
             <article data-testid="order-card" data-status={order.status}>
               <div className="flex items-start justify-between gap-3">
                 <time
                   dateTime={order.created_at}
-                  className="text-sm text-zinc-500"
+                  className="text-sm text-foreground-muted"
                 >
                   {formatOrderDateTime(order.created_at)}
                 </time>
@@ -35,7 +35,7 @@ export function OrderList({ orders }: { orders: Order[] }) {
               </div>
               <p
                 data-testid="order-items"
-                className="mt-3 text-sm leading-6 text-zinc-700"
+                className="mt-3 text-sm leading-6 text-foreground"
               >
                 {formatOrderItemSummary(order.items)}
               </p>
@@ -60,14 +60,14 @@ export function OrderListSkeleton() {
         {Array.from({ length: 3 }, (_, index) => (
           <li
             key={index}
-            className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5"
+            className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-5"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="h-4 w-40 animate-pulse rounded bg-zinc-200" />
-              <div className="h-5 w-16 animate-pulse rounded-full bg-zinc-100" />
+              <div className="h-4 w-40 animate-pulse rounded bg-surface-muted" />
+              <div className="h-5 w-16 animate-pulse rounded-full bg-surface-muted" />
             </div>
-            <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-zinc-100" />
-            <div className="mt-3 h-6 w-24 animate-pulse rounded bg-zinc-200" />
+            <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-surface-muted" />
+            <div className="mt-3 h-6 w-24 animate-pulse rounded bg-surface-muted" />
           </li>
         ))}
       </ul>

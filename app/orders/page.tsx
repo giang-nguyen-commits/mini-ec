@@ -1,12 +1,14 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { OrderList, OrderListSkeleton } from "@/components/order-list";
 import { loginHref } from "@/lib/auth-redirect";
+import { APP_NAME } from "@/lib/brand";
 import { getOrdersByUserId } from "@/lib/orders";
 import { getAuthUser } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "注文履歴 — Mini EC",
+  title: `注文履歴 — ${APP_NAME}`,
 };
 
 export default async function OrdersPage() {
@@ -17,7 +19,7 @@ export default async function OrdersPage() {
 
   return (
     <main className="mx-auto w-full max-w-[960px] flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-forest">
+      <h1 className="mb-6 font-[family-name:var(--font-heading)] text-[28px] font-semibold tracking-tight text-forest sm:text-[32px]">
         注文履歴
       </h1>
       <Suspense fallback={<OrderListSkeleton />}>
@@ -32,11 +34,16 @@ async function OrderHistory({ userId }: { userId: string }) {
 
   if (orders.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-emerald-200 bg-white px-6 py-16 text-center">
-        <p className="text-base font-medium text-zinc-900">
+      <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-16 text-center">
+        <p className="text-base font-medium text-foreground">
           注文がまだありません
         </p>
-        <p className="mt-1 text-sm text-zinc-500">Chưa có đơn hàng</p>
+        <Link
+          href="/products"
+          className="mt-6 inline-flex rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-forest-strong"
+        >
+          商品を見る
+        </Link>
       </div>
     );
   }

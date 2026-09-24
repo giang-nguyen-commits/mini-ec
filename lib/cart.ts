@@ -1,6 +1,6 @@
 import type { CartItem, CartState } from "@/lib/types";
 
-export const CART_STORAGE_KEY = "mini-ec:cart";
+export const CART_STORAGE_KEY = "giang-cosmetic:cart";
 
 export function emptyCart(): CartState {
   return { items: [], updatedAt: new Date().toISOString() };

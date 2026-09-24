@@ -186,6 +186,28 @@ test("新規登録で確認パスワードが不一致ならエラーを出す",
   );
 });
 
+test("ログイン画面にデモアカウント案内がある", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("demo.mini.ec@gmail.com")).toBeVisible();
+  await page.getByRole("button", { name: "フォームに入力する" }).click();
+  await expect(page.getByLabel("メールアドレス")).toHaveValue(
+    "demo.mini.ec@gmail.com",
+  );
+});
+
+test("商品一覧の肌悩みフィルタで絞り込める", async ({ page }) => {
+  await page.goto("/products");
+
+  const concerns = page.getByRole("navigation", { name: "肌悩み" });
+  await expect(concerns).toBeVisible();
+
+  const firstConcern = concerns.getByRole("link").nth(1);
+  await firstConcern.click();
+
+  await expect(page).toHaveURL(/concern=/);
+  await expect(page.getByText(/該当 \d+点/)).toBeVisible();
+});
+
 test("未ログインで /api/checkout に POST すると 401 になる", async ({
   request,
 }) => {

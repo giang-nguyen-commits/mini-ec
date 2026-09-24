@@ -8,8 +8,8 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 
 export const ORDER_STATUS_TONE: Record<OrderStatus, string> = {
   pending: "bg-amber-50 text-amber-800",
-  paid: "bg-emerald-50 text-forest",
-  canceled: "bg-zinc-100 text-zinc-600",
+  paid: "bg-forest-soft text-forest",
+  canceled: "bg-surface-muted text-foreground-muted",
 };
 
 export function orderStatusLabel(status: string) {
@@ -17,7 +17,7 @@ export function orderStatusLabel(status: string) {
 }
 
 export function orderStatusTone(status: string) {
-  return ORDER_STATUS_TONE[status as OrderStatus] ?? "bg-zinc-100 text-zinc-600";
+  return ORDER_STATUS_TONE[status as OrderStatus] ?? "bg-surface-muted text-foreground-muted";
 }
 
 export function formatOrderDateTime(iso: string) {
