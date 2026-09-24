@@ -34,6 +34,7 @@ MVP 外: 管理画面、お気に入り、レビュー投稿。企画は `docs/0
 - 新規登録 / ログイン（Supabase Auth）
 - 配送先入力 → Stripe Checkout（テスト）
 - 注文履歴（ログイン必須）
+- サポートチャット（右下。Vercel AI Gateway 経由の LLM）
 
 未ログインで `/checkout` または `/orders` を開くと `/login?next=...` に戻します。
 
@@ -59,6 +60,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
+AI_GATEWAY_API_KEY=
+AI_GATEWAY_MODEL=google/gemini-3.5-flash-lite
 ```
 
 Supabase Auth の Redirect URLs に次を追加する:
@@ -86,3 +89,4 @@ Supabase Auth の Redirect URLs に次を追加する:
 | レスポンシブ | 390px でロゴとカートが同一行。ログイン時は「注文」がヘッダーに出る |
 | セキュリティ | service role はサーバーのみ。`safeNextPath` でオープンリダイレクト防止。`robots.txt` は noindex |
 | 決済 | Stripe テストカードのみ。webhook で `paid`。キャンセル時は在庫を戻す |
+| LLM | 右下チャットが `/api/chat` から AI Gateway を呼ぶ。固定文の fake bot ではない |

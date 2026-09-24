@@ -13,26 +13,14 @@ type ChatMessage = {
 const WELCOME: ChatMessage = {
   id: "welcome",
   from: "bot",
-  text: "Giang Cosmetic です。ご質問をどうぞ。このチャットは学習用のデモ画面です。",
+  text: "Giang Cosmetic です。商品や使い方についてご質問ください。回答は学習用の AI です。実販売はしていません。",
 };
-
-function botReply(text: string) {
-  if (/配送|届|発送|送料/.test(text)) {
-    return "ご注文後の発送は学習用デモのため行っておりません。決済は Stripe テストモードです。";
-  }
-  if (/返品|交換|キャンセル/.test(text)) {
-    return "返品・交換はデモ画面のため受け付けていません。商品一覧から操作をお試しください。";
-  }
-  if (/営業|時間|開店/.test(text)) {
-    return "こちらはオンラインの学習用デモです。営業時間の設定はありません。";
-  }
-  return "ありがとうございます。このチャットは学習用のデモ画面です。担当者への転送はまだありませんので、商品一覧やカートから操作をお試しください。";
-}
 
 export function ChatWidget() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -45,11 +33,11 @@ export function ChatWidget() {
       return;
     }
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [messages, open]);
+  }, [messages, open, pending]);
 
-  function send() {
+  async function send() {
     const text = draft.trim();
-    if (!text) {
+    if (!text || pending) {
       return;
     }
 
@@ -58,14 +46,55 @@ export function ChatWidget() {
       from: "user",
       text,
     };
-    const reply: ChatMessage = {
-      id: `bot-${Date.now()}`,
-      from: "bot",
-      text: botReply(text),
-    };
 
-    setMessages((current) => [...current, userMessage, reply]);
+    const history = [...messages, userMessage]
+      .filter((message) => message.id !== "welcome")
+      .map((message) => ({
+        role: message.from === "user" ? "user" : "assistant",
+        content: message.text,
+      }));
+
+    setMessages((current) => [...current, userMessage]);
     setDraft("");
+    setPending(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history }),
+      });
+      const data = (await response.json()) as {
+        text?: unknown;
+        message?: unknown;
+      };
+      const reply =
+        typeof data.text === "string" && data.text.trim()
+          ? data.text.trim()
+          : typeof data.message === "string" && data.message.trim()
+            ? data.message.trim()
+            : "応答できませんでした。時間をおいて再度お試しください。";
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: `bot-${Date.now()}`,
+          from: "bot",
+          text: reply,
+        },
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          id: `bot-${Date.now()}`,
+          from: "bot",
+          text: "通信に失敗しました。時間をおいて再度お試しください。",
+        },
+      ]);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -80,7 +109,7 @@ export function ChatWidget() {
               <p className="text-[13px] font-medium tracking-[0.16em]">
                 カスタマーサポート
               </p>
-              <p className="mt-0.5 text-[11px] text-white/75">デモ画面</p>
+              <p className="mt-0.5 text-[11px] text-white/75">AI回答・学習用デモ</p>
             </div>
             <button
               type="button"
@@ -108,13 +137,18 @@ export function ChatWidget() {
                 {message.text}
               </p>
             ))}
+            {pending ? (
+              <p className="mr-8 rounded-lg border border-border bg-white px-3 py-2 text-sm leading-6 text-muted-foreground">
+                入力中…
+              </p>
+            ) : null}
           </div>
 
           <form
             className="flex gap-2 border-t border-border bg-white p-3"
             onSubmit={(event) => {
               event.preventDefault();
-              send();
+              void send();
             }}
           >
             <label className="sr-only" htmlFor="chat-draft">
@@ -125,11 +159,14 @@ export function ChatWidget() {
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="メッセージを入力"
-              className="h-11 min-w-0 flex-1 rounded-lg border border-border px-3 text-sm outline-none focus:border-forest"
+              disabled={pending}
+              maxLength={500}
+              className="h-11 min-w-0 flex-1 rounded-lg border border-border px-3 text-sm outline-none focus:border-forest disabled:opacity-60"
             />
             <button
               type="submit"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-forest text-white hover:bg-forest-strong"
+              disabled={pending}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-forest text-white hover:bg-forest-strong disabled:opacity-60"
               aria-label="送信"
             >
               <SendIcon className="h-4 w-4" />
