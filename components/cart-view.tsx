@@ -7,6 +7,7 @@ import { useCart } from "@/components/cart-provider";
 import { QuantityStepper } from "@/components/quantity-stepper";
 import { buildCartLines, cartTotal } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
+import { withSafeProductImage } from "@/lib/safe-product-image";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type { CartLine, Product } from "@/lib/types";
 
@@ -32,7 +33,10 @@ export function CartView() {
         throw error;
       }
 
-      setView({ status: "ready", products: (data as Product[] | null) ?? [] });
+      setView({
+        status: "ready",
+        products: ((data as Product[] | null) ?? []).map(withSafeProductImage),
+      });
     } catch {
       setView({ status: "error" });
     }

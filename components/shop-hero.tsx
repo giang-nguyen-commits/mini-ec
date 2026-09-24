@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { APP_NAME } from "@/lib/brand";
+import { SUBMISSION_HERO } from "@/lib/safe-product-image";
 
 const SLIDES = [
   {
@@ -12,18 +13,16 @@ const SLIDES = [
     kicker: "化粧品",
     title: "少品種を、丁寧に。",
     href: "/products?category=化粧品#catalog",
-    image: "/shop-hero.png",
-    imageClass: "object-cover object-[20%_30%]",
-    fit: "bleed" as const,
+    image: SUBMISSION_HERO.cosmetics,
+    imageClass: "object-cover object-center",
   },
   {
     id: "health",
     kicker: "健康商品",
     title: "内側から、整える。",
     href: "/products?category=健康商品#catalog",
-    image: "/shop-hero-health.png",
-    imageClass: "object-contain object-center",
-    fit: "still" as const,
+    image: SUBMISSION_HERO.health,
+    imageClass: "object-cover object-center",
   },
 ];
 
@@ -53,22 +52,7 @@ export function ShopHero() {
               itemIndex === index ? "z-[1] opacity-100" : "z-0 opacity-0"
             }`}
           >
-            {item.fit === "still" ? (
-              <>
-                <div className="absolute inset-0 bg-[#cfe4f0]" />
-                <div className="absolute inset-y-0 right-0 w-full sm:w-[62%]">
-                  <Image
-                    src={item.image}
-                    alt=""
-                    fill
-                    sizes="(min-width: 640px) 62vw, 100vw"
-                    className={item.imageClass}
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent sm:from-white sm:via-white/55 sm:to-transparent" />
-              </>
-            ) : (
-              <>
+            <>
                 <Image
                   src={item.image}
                   alt=""
@@ -79,7 +63,6 @@ export function ShopHero() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/50 to-transparent" />
               </>
-            )}
           </div>
         ))}
 

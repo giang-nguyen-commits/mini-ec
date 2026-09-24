@@ -7,6 +7,7 @@ import { placeOrder } from "@/app/actions/place-order";
 import { useCart } from "@/components/cart-provider";
 import { buildCartLines, cartTotal, payableLines } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
+import { withSafeProductImage } from "@/lib/safe-product-image";
 import {
   persistProfile,
   readProfile,
@@ -34,7 +35,9 @@ export function CheckoutForm() {
     void supabase
       .from("products")
       .select("id, name, price, stock, description, image_url, created_at")
-      .then(({ data }) => setProducts((data as Product[] | null) ?? []));
+      .then(({ data }) =>
+        setProducts(((data as Product[] | null) ?? []).map(withSafeProductImage)),
+      );
   }, []);
 
   const lines = useMemo(() => {

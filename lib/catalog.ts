@@ -258,7 +258,7 @@ export function groupHealthByLine(products: Product[]) {
           id: "82xコース",
           caption:
             "1ヶ月目 Sakura Premium Collagen、2ヶ月目 Collagen Classic、3ヶ月目 Placenta Classic。美肌・スリムボディ向けの3ヶ月コースです。",
-          bannerUrl: "/products/82x-course-banner.png?v=3",
+          bannerUrl: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=1600&q=80",
           products: course,
         });
       }

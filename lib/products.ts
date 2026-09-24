@@ -8,6 +8,7 @@ import {
   resolveCatalogGroup,
 } from "@/lib/catalog";
 import { productMatchesQuery } from "@/lib/search";
+import { withSafeProductImage } from "@/lib/safe-product-image";
 import { createClient } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
 
@@ -205,7 +206,7 @@ export const getProductById = cache(async (id: string): Promise<Product | null> 
 });
 
 function normalizeProduct(row: Product): Product {
-  return {
+  return withSafeProductImage({
     ...row,
     is_authentic: row.is_authentic ?? true,
     skin_concern_tags: row.skin_concern_tags ?? [],
@@ -213,7 +214,7 @@ function normalizeProduct(row: Product): Product {
     origin: row.origin ?? null,
     ingredients: row.ingredients ?? null,
     skin_type: row.skin_type ?? null,
-  };
+  });
 }
 
 const cosmeticsCategories = new Set([
