@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { placeOrder } from "@/app/actions/place-order";
 import { useCart } from "@/components/cart-provider";
 import { buildCartLines, cartTotal, payableLines } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 import { withSafeProductImage } from "@/lib/safe-product-image";
 import {
+  getProfileSnapshot,
+  getServerProfileSnapshot,
   persistProfile,
-  readProfile,
-  type CustomerProfile,
+  subscribeProfile,
 } from "@/lib/profile";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type { PlaceOrderResult, Product } from "@/lib/types";
@@ -22,22 +23,31 @@ export function CheckoutForm() {
   const { items } = useCart();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled") === "1";
+  const profile = useSyncExternalStore(
+    subscribeProfile,
+    getProfileSnapshot,
+    getServerProfileSnapshot,
+  );
   const [products, setProducts] = useState<Product[] | null>(null);
-  const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [state, action, pending] = useActionState(placeOrder, initialState);
   const [payError, setPayError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const checkoutStartedRef = useRef(false);
 
   useEffect(() => {
-    setProfile(readProfile());
+    let cancelled = false;
     const supabase = getSupabaseBrowserClient();
     void supabase
       .from("products")
       .select("id, name, price, stock, description, image_url, created_at")
-      .then(({ data }) =>
-        setProducts(((data as Product[] | null) ?? []).map(withSafeProductImage)),
-      );
+      .then(({ data }) => {
+        if (!cancelled) {
+          setProducts(((data as Product[] | null) ?? []).map(withSafeProductImage));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const lines = useMemo(() => {
@@ -115,7 +125,7 @@ export function CheckoutForm() {
     );
   }
 
-  if (!products || !profile) {
+  if (!products) {
     return (
       <div
         className="h-64 animate-pulse rounded-xl border border-border bg-surface"

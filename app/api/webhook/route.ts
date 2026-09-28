@@ -8,6 +8,7 @@ import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
+/** Stripe webhook だけを信じる。完了画面は改ざんできるため、paid と在庫確定はここで行う。 */
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature) {

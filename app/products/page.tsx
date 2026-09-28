@@ -47,15 +47,12 @@ export default async function ProductsPage({
       {browsing ? null : <ShopHero />}
       <main
         id="catalog"
-        className="mx-auto w-full max-w-[960px] flex-1 scroll-mt-[7.25rem] px-4 py-10 sm:scroll-mt-[8.25rem] sm:px-6 sm:py-12"
+        className="mx-auto w-full max-w-[960px] flex-1 scroll-mt-[6.5rem] px-4 py-5 sm:scroll-mt-[7.5rem] sm:px-6 sm:py-6"
       >
-        <h1 className="mb-2 text-center font-[family-name:var(--font-heading)] text-[30px] font-semibold tracking-[0.12em] text-forest-strong sm:text-[34px]">
+        <h1 className="mb-1 text-center font-[family-name:var(--font-heading)] text-[22px] font-semibold tracking-[0.12em] text-forest-strong sm:text-[26px]">
           商品一覧
         </h1>
-        <span className="mx-auto mb-3 block h-px w-8 bg-gold" aria-hidden />
-        <p className={`text-center text-sm tracking-[0.06em] text-foreground-muted ${browsing ? "mb-6" : "mb-10"}`}>
-          学習用のセレクトショップデモです
-        </p>
+        <span className="mx-auto mb-4 block h-px w-8 bg-gold" aria-hidden />
         <Suspense fallback={<ProductFiltersSkeleton />}>
           <ProductFilters
             q={q}

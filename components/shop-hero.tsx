@@ -7,6 +7,35 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { APP_NAME } from "@/lib/brand";
 import { SUBMISSION_HERO } from "@/lib/safe-product-image";
 
+function HeroSlideImage({
+  src,
+  className,
+  priority,
+}: {
+  src: string;
+  className: string;
+  priority?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return <div className="absolute inset-0 bg-forest-soft" aria-hidden />;
+  }
+
+  return (
+    <Image
+      src={src}
+      alt=""
+      fill
+      priority={priority}
+      sizes="100vw"
+      className={className}
+      unoptimized
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 const SLIDES = [
   {
     id: "cosmetics",
@@ -48,21 +77,16 @@ export function ShopHero() {
           <div
             key={item.id}
             aria-hidden={itemIndex !== index}
-            className={`absolute inset-0 bg-white transition-opacity duration-700 ${
+            className={`absolute inset-0 bg-forest-soft transition-opacity duration-700 ${
               itemIndex === index ? "z-[1] opacity-100" : "z-0 opacity-0"
             }`}
           >
-            <>
-                <Image
-                  src={item.image}
-                  alt=""
-                  fill
-                  priority={itemIndex === 0}
-                  sizes="100vw"
-                  className={item.imageClass}
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/50 to-transparent" />
-              </>
+            <HeroSlideImage
+              src={item.image}
+              className={item.imageClass}
+              priority={itemIndex === 0}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/50 to-transparent" />
           </div>
         ))}
 

@@ -46,6 +46,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return (data as Order | null) ?? null;
 }
 
+/** 在庫減と pending 注文を 1 RPC で行い、同時購入で同じ在庫を売らない。 */
 export async function reserveStockAndCreateOrder(input: {
   userId: string;
   customerName: string;

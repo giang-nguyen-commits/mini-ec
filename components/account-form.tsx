@@ -1,43 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import {
-  emptyProfile,
+  getProfileSnapshot,
+  getServerProfileSnapshot,
   persistProfile,
-  readProfile,
+  subscribeProfile,
   type CustomerProfile,
 } from "@/lib/profile";
 
 export function AccountForm({ loginEmail }: { loginEmail: string }) {
-  const [profile, setProfile] = useState<CustomerProfile>(emptyProfile());
-  const [ready, setReady] = useState(false);
+  const stored = useSyncExternalStore(
+    subscribeProfile,
+    getProfileSnapshot,
+    getServerProfileSnapshot,
+  );
+  const [draft, setDraft] = useState<CustomerProfile | null>(null);
   const [saved, setSaved] = useState(false);
+  const profile = draft ?? {
+    ...stored,
+    email: stored.email || loginEmail,
+  };
 
-  useEffect(() => {
-    const stored = readProfile();
-    setProfile({
-      ...stored,
-      email: stored.email || loginEmail,
-    });
-    setReady(true);
-  }, [loginEmail]);
+  function update<K extends keyof CustomerProfile>(key: K, value: CustomerProfile[K]) {
+    setDraft({ ...profile, [key]: value });
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     persistProfile(profile);
+    setDraft(null);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2500);
-  }
-
-  if (!ready) {
-    return (
-      <div
-        className="h-80 animate-pulse rounded-xl border border-border bg-surface"
-        role="status"
-        aria-label="設定を読み込み中"
-      />
-    );
   }
 
   return (
@@ -67,9 +62,7 @@ export function AccountForm({ loginEmail }: { loginEmail: string }) {
             type="text"
             autoComplete="name"
             value={profile.name}
-            onChange={(event) =>
-              setProfile((current) => ({ ...current, name: event.target.value }))
-            }
+            onChange={(event) => update("name", event.target.value)}
             className="h-11 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-forest"
           />
         </label>
@@ -83,9 +76,7 @@ export function AccountForm({ loginEmail }: { loginEmail: string }) {
             type="email"
             autoComplete="email"
             value={profile.email}
-            onChange={(event) =>
-              setProfile((current) => ({ ...current, email: event.target.value }))
-            }
+            onChange={(event) => update("email", event.target.value)}
             className="h-11 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-forest"
           />
         </label>
@@ -99,9 +90,7 @@ export function AccountForm({ loginEmail }: { loginEmail: string }) {
             type="tel"
             autoComplete="tel"
             value={profile.phone}
-            onChange={(event) =>
-              setProfile((current) => ({ ...current, phone: event.target.value }))
-            }
+            onChange={(event) => update("phone", event.target.value)}
             className="h-11 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-forest"
           />
         </label>
@@ -117,12 +106,7 @@ export function AccountForm({ loginEmail }: { loginEmail: string }) {
             rows={3}
             autoComplete="street-address"
             value={profile.address}
-            onChange={(event) =>
-              setProfile((current) => ({
-                ...current,
-                address: event.target.value,
-              }))
-            }
+            onChange={(event) => update("address", event.target.value)}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-forest"
           />
         </label>

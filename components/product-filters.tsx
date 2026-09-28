@@ -49,11 +49,10 @@ export function ProductFilters({
 }) {
   const cosmeticsOpen = category === "化粧品";
   const healthOpen = category === "健康商品";
-  const showConcerns =
-    concerns.length > 0 && (!category || cosmeticsOpen);
+  const showConcerns = concerns.length > 0 && cosmeticsOpen;
 
   return (
-    <div className="sticky top-[7.25rem] z-30 -mx-4 mb-6 space-y-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-sm sm:top-[8.25rem] sm:-mx-6 sm:px-6">
+    <div className="sticky top-[6.5rem] z-30 -mx-4 mb-4 space-y-2 border-b border-border/70 bg-background/95 px-4 py-2 backdrop-blur-sm sm:top-[7.5rem] sm:-mx-6 sm:px-6">
       <form action="/products#catalog" className="flex gap-2">
         {category ? <input type="hidden" name="category" value={category} /> : null}
         {brand ? <input type="hidden" name="brand" value={brand} /> : null}
@@ -64,10 +63,10 @@ export function ProductFilters({
             type="search"
             name="q"
             defaultValue={q}
-            placeholder="1語で検索（ちふれ、コラーゲン）"
+            placeholder="検索（保湿、コラーゲン）"
             aria-label="商品を検索"
             list="product-search-hints"
-            className="h-11 w-full rounded-none border-0 border-b border-border bg-transparent pl-9 pr-4 text-sm outline-none transition-colors duration-200 focus:border-forest"
+            className="h-9 w-full rounded-none border-0 border-b border-border bg-transparent pl-9 pr-4 text-sm outline-none transition-colors duration-200 focus:border-forest"
           />
           <datalist id="product-search-hints">
             {SEARCH_SUGGESTIONS.map((hint) => (
@@ -77,36 +76,16 @@ export function ProductFilters({
         </div>
         <button
           type="submit"
-          className="h-11 shrink-0 border-b border-forest px-4 text-[13px] font-medium tracking-[0.18em] text-forest-strong transition-opacity duration-200 hover:opacity-60"
+          className="h-9 shrink-0 border-b border-forest px-3 text-[12px] font-medium tracking-[0.16em] text-forest-strong transition-opacity duration-200 hover:opacity-60"
         >
           検索
         </button>
       </form>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] tracking-[0.12em]">
-        <span className="text-foreground-muted">ヒント</span>
-        {SEARCH_SUGGESTIONS.map((hint) => {
-          const active = q === hint;
-          return (
-            <Link
-              key={hint}
-              href={productsSearchHref({ q: hint })}
-              className={
-                active
-                  ? "text-forest-strong underline decoration-[1px] underline-offset-4"
-                  : "text-foreground-muted transition-colors hover:text-forest-strong"
-              }
-            >
-              {hint}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="space-y-3">
+      <div className="space-y-2">
         <nav
           aria-label="カテゴリ"
-          className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1"
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-0"
         >
           <CategoryTab href={productsSearchHref({ q, concern })} active={!category}>
             すべて
@@ -129,7 +108,7 @@ export function ProductFilters({
         {cosmeticsOpen ? (
           <nav
             aria-label="化粧品ブランド"
-            className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 border-t border-border/70 pt-3"
+            className="flex flex-nowrap items-center justify-start gap-x-4 overflow-x-auto border-t border-border/70 pt-2 [scrollbar-width:thin]"
           >
             <CategoryTab
               href={productsSearchHref({ q, category: "化粧品", concern })}
@@ -159,9 +138,9 @@ export function ProductFilters({
         {showConcerns ? (
           <nav
             aria-label="肌悩み"
-            className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 border-t border-border/70 pt-3"
+            className="flex flex-nowrap items-center justify-start gap-x-4 overflow-x-auto border-t border-border/70 pt-2 [scrollbar-width:thin]"
           >
-            <span className="text-[12px] tracking-[0.12em] text-foreground-muted">
+            <span className="shrink-0 text-[11px] tracking-[0.12em] text-foreground-muted">
               肌悩み
             </span>
             <CategoryTab
@@ -190,7 +169,7 @@ export function ProductFilters({
         {healthOpen ? (
           <nav
             aria-label="健康商品の種類"
-            className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 border-t border-border/70 pt-3"
+            className="flex flex-nowrap items-center justify-start gap-x-4 overflow-x-auto border-t border-border/70 pt-2 [scrollbar-width:thin]"
           >
             <CategoryTab
               href={productsSearchHref({ q, category: "健康商品", concern })}
@@ -232,13 +211,13 @@ function CategoryTab({
   tone?: "group" | "brand" | "health";
 }) {
   const idle = "text-foreground-muted hover:text-forest-strong";
-  const activeTone = "text-forest-strong underline decoration-[1px] underline-offset-8";
+  const activeTone = "text-forest-strong underline decoration-[1px] underline-offset-4";
 
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`inline-flex min-h-11 items-center text-[13px] tracking-[0.16em] transition-colors duration-200 ${
+      className={`inline-flex h-8 shrink-0 items-center text-[12px] tracking-[0.12em] transition-colors duration-200 ${
         active ? activeTone : idle
       }`}
     >
@@ -250,10 +229,10 @@ function CategoryTab({
 export function ProductFiltersSkeleton() {
   return (
     <div
-      className="sticky top-[7.25rem] z-30 -mx-4 mb-6 space-y-3 border-b border-border/70 bg-background/95 px-4 py-3 sm:top-[8.25rem] sm:-mx-6 sm:px-6"
+      className="sticky top-[6.5rem] z-30 -mx-4 mb-4 space-y-2 border-b border-border/70 bg-background/95 px-4 py-2 sm:top-[7.5rem] sm:-mx-6 sm:px-6"
       aria-hidden
     >
-      <div className="h-11 animate-pulse border-b border-border bg-transparent" />
+      <div className="h-9 animate-pulse border-b border-border bg-transparent" />
       <div className="flex flex-wrap justify-center gap-5">
         {Array.from({ length: 6 }, (_, index) => (
           <div

@@ -12,6 +12,7 @@ export type ChatTurn = {
   content: string;
 };
 
+/** クライアントから来た履歴を role/長さで絞る。プロンプト注入と過大な本文を防ぐ。 */
 export function parseChatTurns(value: unknown): ChatTurn[] | null {
   if (!Array.isArray(value)) {
     return null;

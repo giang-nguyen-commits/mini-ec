@@ -18,15 +18,15 @@ const WELCOME: ChatMessage = {
 
 export function ChatWidget() {
   const pathname = usePathname();
+  return <ChatPanel key={pathname} />;
+}
+
+function ChatPanel() {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const listRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!open) {

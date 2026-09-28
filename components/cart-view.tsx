@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/cart-provider";
 import { QuantityStepper } from "@/components/quantity-stepper";
 import { buildCartLines, cartTotal } from "@/lib/checkout";
+import { persistCart, getCartSnapshot } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { withSafeProductImage } from "@/lib/safe-product-image";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -16,13 +17,40 @@ type ViewState =
   | { status: "error" }
   | { status: "ready"; products: Product[] };
 
+function stockNotice(dropped: boolean, clamped: boolean) {
+  if (dropped && clamped) {
+    return "販売終了の商品を外し、在庫に合わせて数量を更新しました";
+  }
+  if (dropped) {
+    return "販売終了の商品をカートから外しました";
+  }
+  if (clamped) {
+    return "在庫に合わせて数量を更新しました";
+  }
+  return null;
+}
+
 export function CartView() {
-  const { items, ready, setItemQuantity, removeItem, replaceItems } = useCart();
+  const { items, setItemQuantity, removeItem } = useCart();
   const [view, setView] = useState<ViewState>({ status: "loading" });
   const [notice, setNotice] = useState<string | null>(null);
 
+  const applyLoadedProducts = useCallback((products: Product[]) => {
+    const { lines, dropped, clamped } = buildCartLines(getCartSnapshot(), products);
+    const message = stockNotice(dropped, clamped);
+    if (message) {
+      persistCart(
+        lines.map((line) => ({
+          productId: line.productId,
+          quantity: line.quantity,
+        })),
+      );
+      setNotice(message);
+    }
+    setView({ status: "ready", products });
+  }, []);
+
   const loadProducts = useCallback(async () => {
-    setView({ status: "loading" });
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
@@ -33,68 +61,53 @@ export function CartView() {
         throw error;
       }
 
-      setView({
-        status: "ready",
-        products: ((data as Product[] | null) ?? []).map(withSafeProductImage),
-      });
+      applyLoadedProducts(((data as Product[] | null) ?? []).map(withSafeProductImage));
     } catch {
       setView({ status: "error" });
     }
-  }, []);
+  }, [applyLoadedProducts]);
 
   useEffect(() => {
-    void loadProducts();
-  }, [loadProducts]);
+    let cancelled = false;
 
-  const { lines, dropped, clamped } = useMemo(() => {
+    void (async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, name, price, stock, description, image_url, created_at");
+
+        if (cancelled) {
+          return;
+        }
+        if (error) {
+          throw error;
+        }
+
+        applyLoadedProducts(((data as Product[] | null) ?? []).map(withSafeProductImage));
+      } catch {
+        if (!cancelled) {
+          setView({ status: "error" });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyLoadedProducts]);
+
+  const { lines } = useMemo(() => {
     if (view.status !== "ready") {
       return {
         lines: [] as CartLine[],
-        dropped: false,
-        clamped: false,
       };
     }
 
     return buildCartLines(items, view.products);
   }, [items, view]);
 
-  useEffect(() => {
-    if (view.status !== "ready" || !ready) {
-      return;
-    }
-
-    if (!dropped && !clamped) {
-      return;
-    }
-
-    const nextItems = lines.map((line) => ({
-      productId: line.productId,
-      quantity: line.quantity,
-    }));
-    const unchanged =
-      nextItems.length === items.length &&
-      nextItems.every(
-        (item, index) =>
-          item.productId === items[index]?.productId &&
-          item.quantity === items[index]?.quantity,
-      );
-
-    if (unchanged) {
-      return;
-    }
-
-    if (dropped && clamped) {
-      setNotice("販売終了の商品を外し、在庫に合わせて数量を更新しました");
-    } else if (dropped) {
-      setNotice("販売終了の商品をカートから外しました");
-    } else {
-      setNotice("在庫に合わせて数量を更新しました");
-    }
-
-    replaceItems(nextItems);
-  }, [clamped, dropped, items, lines, ready, replaceItems, view.status]);
-
-  if (!ready || view.status === "loading") {
+  if (view.status === "loading") {
     return (
       <div className="space-y-3" role="status" aria-label="カートを読み込み中">
         {Array.from({ length: 2 }, (_, index) => (
@@ -113,7 +126,10 @@ export function CartView() {
         <p className="font-medium text-foreground">カートを読み込めませんでした</p>
         <button
           type="button"
-          onClick={() => void loadProducts()}
+          onClick={() => {
+            setView({ status: "loading" });
+            void loadProducts();
+          }}
           className="mt-6 rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-forest-strong"
         >
           再読み込み

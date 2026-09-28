@@ -4,19 +4,19 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
   applyAdd,
   applyRemove,
   applySetQuantity,
-  CART_STORAGE_KEY,
   getCartCount,
+  getCartSnapshot,
+  getServerCartSnapshot,
   persistCart,
-  readCart,
+  subscribeCart,
 } from "@/lib/cart";
 import type { CartItem } from "@/lib/types";
 
@@ -26,7 +26,6 @@ type AddResult =
 
 type CartContextValue = {
   items: CartItem[];
-  ready: boolean;
   count: number;
   addItem: (productId: string, stock: number, quantity?: number) => AddResult;
   setItemQuantity: (
@@ -42,71 +41,45 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [ready, setReady] = useState(false);
-
-  const commit = useCallback((next: CartItem[]) => {
-    setItems(next);
-    persistCart(next);
-  }, []);
-
-  useEffect(() => {
-    setItems(readCart().items);
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    function onStorage(event: StorageEvent) {
-      if (event.key !== CART_STORAGE_KEY) {
-        return;
-      }
-      setItems(readCart().items);
-    }
-
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  const items = useSyncExternalStore(
+    subscribeCart,
+    getCartSnapshot,
+    getServerCartSnapshot,
+  );
 
   const addItem = useCallback(
     (productId: string, stock: number, quantity = 1): AddResult => {
       const result = applyAdd(items, productId, stock, quantity);
       if (result.ok) {
-        commit(result.items);
+        persistCart(result.items);
       }
       return result;
     },
-    [commit, items],
+    [items],
   );
 
   const setItemQuantity = useCallback(
     (productId: string, quantity: number, stock: number) => {
-      commit(applySetQuantity(items, productId, quantity, stock));
+      persistCart(applySetQuantity(items, productId, quantity, stock));
     },
-    [commit, items],
+    [items],
   );
 
-  const removeItem = useCallback(
-    (productId: string) => {
-      commit(applyRemove(items, productId));
-    },
-    [commit, items],
-  );
+  const removeItem = useCallback((productId: string) => {
+    persistCart(applyRemove(items, productId));
+  }, [items]);
 
-  const replaceItems = useCallback(
-    (next: CartItem[]) => {
-      commit(next);
-    },
-    [commit],
-  );
+  const replaceItems = useCallback((next: CartItem[]) => {
+    persistCart(next);
+  }, []);
 
   const clear = useCallback(() => {
-    commit([]);
-  }, [commit]);
+    persistCart([]);
+  }, []);
 
   const value = useMemo<CartContextValue>(
     () => ({
       items,
-      ready,
       count: getCartCount(items),
       addItem,
       setItemQuantity,
@@ -114,7 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       replaceItems,
       clear,
     }),
-    [addItem, clear, items, ready, removeItem, replaceItems, setItemQuantity],
+    [addItem, clear, items, removeItem, replaceItems, setItemQuantity],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

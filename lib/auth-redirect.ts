@@ -32,6 +32,7 @@ function withAllowedQuery(pathname: string, search: string) {
   return suffix ? `${pathname}?${suffix}` : pathname;
 }
 
+/** ログイン後の戻り先。外部URLや `//evil` を弾いてオープンリダイレクトを防ぐ。 */
 export function safeNextPath(raw: unknown): string {
   if (typeof raw !== "string") {
     return "/";

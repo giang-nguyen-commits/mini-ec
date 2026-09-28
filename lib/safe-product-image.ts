@@ -3,7 +3,7 @@ import type { Product } from "@/lib/types";
 
 const UNSPLASH = {
   skincare: [
-    "https://images.unsplash.com/photo-1570172619604-71b782d49e12?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=800&q=80",
   ],
@@ -48,7 +48,7 @@ const COSMETIC_KIND: Record<string, ImageKind> = {
 
 export const SUBMISSION_HERO = {
   cosmetics:
-    "https://images.unsplash.com/photo-1570172619604-71b782d49e12?auto=format&fit=crop&w=1600&q=80",
+    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1600&q=80",
   health:
     "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1600&q=80",
   drinkBanner:

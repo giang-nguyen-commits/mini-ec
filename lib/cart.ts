@@ -36,12 +36,58 @@ export function parseCart(raw: string | null): CartState {
   }
 }
 
+const EMPTY_ITEMS: CartItem[] = [];
+const cartListeners = new Set<() => void>();
+let cartRaw: string | null | undefined;
+let cartItems: CartItem[] = EMPTY_ITEMS;
+
+function emitCart() {
+  for (const listener of cartListeners) {
+    listener();
+  }
+}
+
 export function readCart(): CartState {
   if (typeof window === "undefined") {
     return emptyCart();
   }
 
   return parseCart(window.localStorage.getItem(CART_STORAGE_KEY));
+}
+
+export function getCartSnapshot(): CartItem[] {
+  if (typeof window === "undefined") {
+    return EMPTY_ITEMS;
+  }
+
+  const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+  if (raw === cartRaw) {
+    return cartItems;
+  }
+
+  cartRaw = raw;
+  cartItems = parseCart(raw).items;
+  return cartItems;
+}
+
+export function getServerCartSnapshot(): CartItem[] {
+  return EMPTY_ITEMS;
+}
+
+export function subscribeCart(onStoreChange: () => void) {
+  cartListeners.add(onStoreChange);
+  function onStorage(event: StorageEvent) {
+    if (event.key !== CART_STORAGE_KEY && event.key !== null) {
+      return;
+    }
+    cartRaw = undefined;
+    onStoreChange();
+  }
+  window.addEventListener("storage", onStorage);
+  return () => {
+    cartListeners.delete(onStoreChange);
+    window.removeEventListener("storage", onStorage);
+  };
 }
 
 export function persistCart(items: CartItem[]) {
@@ -53,7 +99,11 @@ export function persistCart(items: CartItem[]) {
     items,
     updatedAt: new Date().toISOString(),
   };
-  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  const raw = JSON.stringify(cart);
+  window.localStorage.setItem(CART_STORAGE_KEY, raw);
+  cartRaw = raw;
+  cartItems = items;
+  emitCart();
 }
 
 export function getCartCount(items: CartItem[]) {
