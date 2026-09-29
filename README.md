@@ -18,6 +18,7 @@ Mentor にはこの README か URL を見せる。localhost は使わない。
 | Stripe | `4242 4242 4242 4242` / 未来月 / CVC 任意 |
 | GitHub | `portfolio-submission` |
 | 仕様 | `docs/01-企画.md` 〜 `docs/04-仕様-ワイヤーフレーム.md` |
+| AI駆動開発 | `.cursor/rules/` · `.cursor/mcp.json` · `.claude/commands/` |
 
 **1文:** 企画は `docs/`、実装は Cursor、公開は Vercel。
 
@@ -83,6 +84,18 @@ MVP 外: 管理画面、お気に入り、レビュー投稿。企画は `docs/0
 - Supabase（Postgres + Auth）
 - Stripe Checkout（Test mode）
 - Vercel AI Gateway（右下チャット）
+
+## AI駆動開発
+
+Mentor の難易度 C（Cursor rules / GitHub MCP / Claude Code コマンド）用。
+
+| 項目 | 場所 |
+| --- | --- |
+| Cursor rules | `.cursor/rules/`（`giang-cosmetic.mdc` ほか） |
+| GitHub MCP | `.cursor/mcp.json` の `github` |
+| スラッシュコマンド | `.claude/commands/`（`/review` `/check-mvp` `/commit`） |
+
+GitHub MCP の PAT はリポジトリに書かない。Cursor の **Settings → Tools & MCP** で `github` を開き、環境変数 `GITHUB_PERSONAL_ACCESS_TOKEN` を設定する（scope は `repo` と `issues`）。
 
 ## 前提条件
 

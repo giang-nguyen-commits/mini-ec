@@ -54,5 +54,8 @@ next-env.d.ts
 /*.png
 /.playwright-mcp/
 
-# editor
-.cursor/
+# editor local; commit Cursor rules + MCP config for mentor review
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/mcp.json

@@ -1,0 +1,23 @@
+---
+description: React / Next クライアントの状態とコンポーネント方針
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# React / App Router
+
+- Server Component がデフォルト。`"use client"` はイベント・ブラウザ API・購読が必要なときだけ。
+- カートとプロフィールは `useSyncExternalStore`（`lib/cart.ts` / `lib/profile.ts`）。`useEffect` 内で `setState` しない。
+- カート更新は `persistCart`。直接 `localStorage` を散らさない。
+- ログイン後の戻り先は `safeNextPath`（`lib/auth-redirect.ts`）。`next` に外部 URL を入れない。
+
+```tsx
+// ❌ BAD
+useEffect(() => {
+  setCart(readCart());
+}, []);
+
+// ✅ GOOD
+const cart = useSyncExternalStore(subscribeCart, getCartSnapshot, getCartSnapshot);
+```
+---

@@ -1,0 +1,14 @@
+---
+description: Stripe webhook・Supabase・Route Handler の約束
+globs: "{app/api/**/*.ts,lib/order-lifecycle.ts,lib/stripe.ts,lib/auth-redirect.ts}"
+alwaysApply: false
+---
+
+# API / 決済
+
+- `service role` と `STRIPE_SECRET_KEY` は Route Handler / サーバーのみ。`NEXT_PUBLIC_*` に載せない。
+- 注文の `paid` と在庫確定は Stripe webhook（`app/api/webhook/route.ts`）。完了ページのクエリだけを信じない。
+- `/api/checkout` は未ログインなら 401。在庫は RPC / `order-lifecycle` 経由。
+- webhook 署名（`stripe-signature`）を必ず検証する。
+- 新しいリダイレクト先を足すときは `safeNextPath` の許可リストも更新する。
+---

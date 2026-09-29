@@ -1,0 +1,26 @@
+---
+description: Giang Cosmetic の MVP 範囲と提出ルール
+alwaysApply: true
+---
+
+# Giang Cosmetic
+
+学習用セレクトショップ。販売しない。ブランドは **Giang Cosmetic**（Sakura に戻さない）。
+
+提出ブランチは `portfolio-submission`。本番は https://mini-ec-phi.vercel.app 。企画は `docs/01`〜`04`。
+
+## MVP に入れる
+
+商品一覧 / 詳細、カート（localStorage）、Supabase Auth、Stripe Checkout（テスト）、注文履歴、右下チャット（AI Gateway）。
+
+## MVP に入れない
+
+管理画面、お気に入り、レビュー投稿、AWS、課金本番、GitHub Actions。
+
+## 実装
+
+- TypeScript strict。`any` を増やさない。
+- 秘密情報（`.env*`、PAT、service role）を commit しない。
+- メーカー公式画像は使わない。Unsplash は存在する photo ID のみ。
+- 日本語 UI 文言は既存トーンに合わせる。
+---
