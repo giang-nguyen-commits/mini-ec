@@ -20,6 +20,15 @@ export function orderStatusTone(status: string) {
   return ORDER_STATUS_TONE[status as OrderStatus] ?? "bg-surface-muted text-foreground-muted";
 }
 
+export function parseOrderStatus(
+  value: string | undefined,
+): OrderStatus | undefined {
+  if (value && value in ORDER_STATUS_LABEL) {
+    return value as OrderStatus;
+  }
+  return undefined;
+}
+
 export function formatOrderDateTime(iso: string) {
   return new Intl.DateTimeFormat("ja-JP", {
     year: "numeric",

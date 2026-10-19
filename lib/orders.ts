@@ -1,17 +1,25 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import type { Order } from "@/lib/types";
+import type { Order,OrderStatus } from "@/lib/types";
 
 const orderColumns =
   "id, user_id, customer_name, phone, address, total, items, status, stripe_session_id, created_at";
 
-export async function getOrdersByUserId(userId: string): Promise<Order[]> {
+  export async function getOrdersByUserId(
+    userId: string,
+    status?: OrderStatus,
+  ): Promise<Order[]> {
   const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("orders")
     .select(orderColumns)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
+    if (status) {
+      query = query.eq("status", status);
+    }
+  
+    const { data, error } = await query;
   if (error) {
     throw error;
   }
